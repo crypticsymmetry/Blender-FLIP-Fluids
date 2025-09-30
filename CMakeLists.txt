@@ -39,6 +39,7 @@ include(CheckLinkerFlag)
 set(BUILD_DEBUG OFF CACHE BOOL "Turn on to build a debug release")
 option(DISTRIBUTE_SOURCE "Include source code in addon" ON)
 option(WITH_MIXBOX "Compile with Mixbox pigment mixing feature" OFF)
+option(FLIP_USE_MSBG "Use MSBG for pressure projection (requires MSBG library)" OFF)
 set(LIBRARY_SUFFIX "" CACHE STRING "Optional suffix to add to the end of the library name")
 
 # Configure Project
@@ -86,6 +87,45 @@ else()
     add_definitions(-DWITH_MIXBOX=0)
     set(MIXBOX_SOURCE_CPP "src/engine/mixbox/mixbox_stub.cpp")
 endif()
+
+# Configure MSBG
+if(FLIP_USE_MSBG)
+    message(STATUS "MSBG pressure solver support enabled")
+    set(MSBG_FOUND FALSE)
+    
+    # Option A: Check for vendored third_party/msbg
+    if(EXISTS "${PROJECT_SOURCE_DIR}/third_party/msbg/CMakeLists.txt")
+        message(STATUS "Found vendored MSBG at third_party/msbg")
+        add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/msbg")
+        set(MSBG_FOUND TRUE)
+    # Option B: Check for system-installed MSBG
+    elseif(DEFINED ENV{MSBG_ROOT})
+        message(STATUS "Looking for MSBG at MSBG_ROOT=$ENV{MSBG_ROOT}")
+        set(CMAKE_PREFIX_PATH "$ENV{MSBG_ROOT}" ${CMAKE_PREFIX_PATH})
+        find_package(MSBG QUIET)
+        if(MSBG_FOUND)
+            message(STATUS "Found system MSBG via MSBG_ROOT")
+        endif()
+    else()
+        find_package(MSBG QUIET)
+        if(MSBG_FOUND)
+            message(STATUS "Found system MSBG via find_package")
+        endif()
+    endif()
+    
+    if(NOT MSBG_FOUND)
+        message(FATAL_ERROR "FLIP_USE_MSBG is ON but MSBG library not found. "
+                           "Please install MSBG or set MSBG_ROOT environment variable, "
+                           "or place MSBG source in third_party/msbg directory.")
+    endif()
+    
+    add_definitions(-DFLIP_USE_MSBG)
+    set(MSBG_ADAPTER_SOURCES "src/engine/msbg_pressure_adapter.cpp")
+else()
+    message(STATUS "MSBG pressure solver support disabled")
+    set(MSBG_ADAPTER_SOURCES "")
+endif()
+
 
 # Configure Compiler/OS Specific Flags
 if(MSVC)
@@ -187,23 +227,54 @@ file(GLOB ALEMBIC_IO_LIBRARY_SOURCES
         "src/alembic_io/src/c_bindings/*.cpp" 
         ${MIXBOX_SOURCE_CPP})
 
+# Exclude MSBG adapter if not enabled
+if(NOT FLIP_USE_MSBG)
+    list(FILTER ALEMBIC_IO_LIBRARY_SOURCES EXCLUDE REGEX "msbg_pressure_adapter\\.cpp$")
+endif()
+
 add_library(alembic_objects OBJECT ${ALEMBIC_IO_LIBRARY_SOURCES})
 target_link_libraries(alembic_objects PUBLIC Alembic::Alembic)
 target_compile_features(alembic_objects PRIVATE cxx_std_17)
 
+# Link MSBG if enabled
+if(FLIP_USE_MSBG)
+    target_link_libraries(alembic_objects PUBLIC msbg)
+endif()
+
 # Alembic IO Engine Library
 add_library("ffalembicengine${LIBRARY_SUFFIX}" SHARED $<TARGET_OBJECTS:alembic_objects>)
 target_link_libraries("ffalembicengine${LIBRARY_SUFFIX}" PUBLIC Alembic::Alembic)
+
+# Link MSBG if enabled
+if(FLIP_USE_MSBG)
+    target_link_libraries("ffalembicengine${LIBRARY_SUFFIX}" PUBLIC msbg)
+endif()
 
 # FLIP Fluids Engine Objects
 file(GLOB SOURCES 
         "src/engine/*.cpp" 
         "src/engine/c_bindings/*.cpp" 
         ${MIXBOX_SOURCE_CPP})
+
+# Exclude MSBG adapter if not enabled
+if(NOT FLIP_USE_MSBG)
+    list(FILTER SOURCES EXCLUDE REGEX "msbg_pressure_adapter\\.cpp$")
+endif()
+
 add_library(objects OBJECT ${SOURCES})
+
+# Link MSBG if enabled
+if(FLIP_USE_MSBG)
+    target_link_libraries(objects PUBLIC msbg)
+endif()
 
 # FLIP Fluids Engine Library
 add_library("ffengine${LIBRARY_SUFFIX}" SHARED $<TARGET_OBJECTS:objects>)
+
+# Link MSBG if enabled
+if(FLIP_USE_MSBG)
+    target_link_libraries("ffengine${LIBRARY_SUFFIX}" PUBLIC msbg)
+endif()
 
 # Copy Libraries To Addon
 file(COPY "${CMAKE_SOURCE_DIR}/src/addon/" DESTINATION "${BLENDER_ADDON_DIR}")
