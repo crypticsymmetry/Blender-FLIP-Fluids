@@ -3,4 +3,6 @@ src/addon/__init__.py
 src/addon/blender_manifest.toml
 src/addon/utils/installation_utils.py
 /build
+build_test/
+third_party/
 .DS_Store
