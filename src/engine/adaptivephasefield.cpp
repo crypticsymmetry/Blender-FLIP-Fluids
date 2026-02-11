@@ -38,14 +38,14 @@ void AdaptivePhaseField::initialize(int i, int j, int k, double dx) {
     _ksize = k;
     _dx = dx;
 
-    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 0.0f);
+    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 1.0f);
 }
 
 void AdaptivePhaseField::configureSparseGrid(int blockWidth, int levels) {
     _blockWidth = blockWidth;
     _levels = levels;
 
-    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 0.0f);
+    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 1.0f);
 }
 
 void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particles,
