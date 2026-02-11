@@ -2982,6 +2982,90 @@ extern "C" {
         );
     }
 
+    EXPORTDLL void FluidSimulation_enable_adaptive_phase_field_flip(FluidSimulation* obj, int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableAdaptivePhaseFieldFLIP, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_adaptive_phase_field_flip(FluidSimulation* obj, int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableAdaptivePhaseFieldFLIP, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_adaptive_phase_field_flip_enabled(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isAdaptivePhaseFieldFLIPEnabled, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_bandwidth(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldBandwidth, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_bandwidth(FluidSimulation* obj, int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldBandwidth, n, err
+        );
+    }
+
+    EXPORTDLL double FluidSimulation_get_adaptive_phase_field_smoothing(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldSmoothing, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_smoothing(FluidSimulation* obj, double n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldSmoothing, n, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_enable_msbg(FluidSimulation* obj, int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableMSBG, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_msbg(FluidSimulation* obj, int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableMSBG, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_msbg_enabled(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isMSBGEnabled, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_msbg_base_block_width(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getMSBGBaseBlockWidth, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_msbg_base_block_width(FluidSimulation* obj, int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setMSBGBaseBlockWidth, n, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_msbg_refinement_levels(FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getMSBGRefinementLevels, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_msbg_refinement_levels(FluidSimulation* obj, int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setMSBGRefinementLevels, n, err
+        );
+    }
+
     EXPORTDLL void FluidSimulation_enable_fracture_optimization(FluidSimulation* obj, int *err) {
         CBindings::safe_execute_method_void_0param(
             obj, &FluidSimulation::enableFractureOptimization, err

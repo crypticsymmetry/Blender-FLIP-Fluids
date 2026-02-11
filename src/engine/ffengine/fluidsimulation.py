@@ -2497,6 +2497,92 @@ class FluidSimulation(object):
         pb.execute_lib_func(libfunc, [self(), ratio])
 
     @property
+    def enable_adaptive_phase_field_flip(self):
+        libfunc = lib.FluidSimulation_is_adaptive_phase_field_flip_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @enable_adaptive_phase_field_flip.setter
+    def enable_adaptive_phase_field_flip(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_adaptive_phase_field_flip
+        else:
+            libfunc = lib.FluidSimulation_disable_adaptive_phase_field_flip
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def adaptive_phase_field_bandwidth(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_bandwidth
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_bandwidth.setter
+    @decorators.check_ge(1)
+    @decorators.check_le(64)
+    def adaptive_phase_field_bandwidth(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_bandwidth
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), int(n)])
+
+    @property
+    def adaptive_phase_field_smoothing(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_smoothing
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_double)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_smoothing.setter
+    @decorators.check_ge_zero
+    @decorators.check_le(1.0)
+    def adaptive_phase_field_smoothing(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_smoothing
+        pb.init_lib_func(libfunc, [c_void_p, c_double, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def enable_msbg(self):
+        libfunc = lib.FluidSimulation_is_msbg_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @enable_msbg.setter
+    def enable_msbg(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_msbg
+        else:
+            libfunc = lib.FluidSimulation_disable_msbg
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def msbg_base_block_width(self):
+        libfunc = lib.FluidSimulation_get_msbg_base_block_width
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @msbg_base_block_width.setter
+    @decorators.check_ge(2)
+    @decorators.check_le(64)
+    def msbg_base_block_width(self, n):
+        libfunc = lib.FluidSimulation_set_msbg_base_block_width
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), int(n)])
+
+    @property
+    def msbg_refinement_levels(self):
+        libfunc = lib.FluidSimulation_get_msbg_refinement_levels
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @msbg_refinement_levels.setter
+    @decorators.check_ge(1)
+    @decorators.check_le(6)
+    def msbg_refinement_levels(self, n):
+        libfunc = lib.FluidSimulation_set_msbg_refinement_levels
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), int(n)])
+
+    @property
     def enable_fracture_optimization(self):
         libfunc = lib.FluidSimulation_is_fracture_optimization_enabled
         pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)

@@ -1307,6 +1307,13 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
     fluidsim.PICFLIP_ratio = __get_parameter_data(advanced.PICFLIP_ratio, frameno)
     fluidsim.PICAPIC_ratio = __get_parameter_data(advanced.PICAPIC_ratio, frameno)
 
+    fluidsim.enable_adaptive_phase_field_flip =         __get_parameter_data(advanced.enable_adaptive_phase_field_flip, frameno)
+    fluidsim.adaptive_phase_field_bandwidth =         __get_parameter_data(advanced.adaptive_phase_field_bandwidth, frameno)
+    fluidsim.adaptive_phase_field_smoothing =         __get_parameter_data(advanced.adaptive_phase_field_smoothing, frameno)
+    fluidsim.enable_msbg = __get_parameter_data(advanced.enable_msbg, frameno)
+    fluidsim.msbg_base_block_width = __get_parameter_data(advanced.msbg_base_block_width, frameno)
+    fluidsim.msbg_refinement_levels = __get_parameter_data(advanced.msbg_refinement_levels, frameno)
+
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     fluidsim.CFL_condition_number = CFL_number
 
@@ -2231,6 +2238,24 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
 
     PICAPIC_ratio = __get_parameter_data(advanced.PICAPIC_ratio, frameno)
     __set_property(fluidsim, 'PICAPIC_ratio', PICAPIC_ratio)
+
+    enable_adaptive_phase_field_flip = __get_parameter_data(advanced.enable_adaptive_phase_field_flip, frameno)
+    __set_property(fluidsim, 'enable_adaptive_phase_field_flip', enable_adaptive_phase_field_flip)
+
+    adaptive_phase_field_bandwidth = __get_parameter_data(advanced.adaptive_phase_field_bandwidth, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_bandwidth', adaptive_phase_field_bandwidth)
+
+    adaptive_phase_field_smoothing = __get_parameter_data(advanced.adaptive_phase_field_smoothing, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_smoothing', adaptive_phase_field_smoothing)
+
+    enable_msbg = __get_parameter_data(advanced.enable_msbg, frameno)
+    __set_property(fluidsim, 'enable_msbg', enable_msbg)
+
+    msbg_base_block_width = __get_parameter_data(advanced.msbg_base_block_width, frameno)
+    __set_property(fluidsim, 'msbg_base_block_width', msbg_base_block_width)
+
+    msbg_refinement_levels = __get_parameter_data(advanced.msbg_refinement_levels, frameno)
+    __set_property(fluidsim, 'msbg_refinement_levels', msbg_refinement_levels)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     __set_property(fluidsim, 'CFL_condition_number', CFL_number)

@@ -28,6 +28,8 @@ SOFTWARE.
 #include "gridutils.h"
 #include "threadutils.h"
 
+#include <algorithm>
+
 
 VelocityAdvector::VelocityAdvector() {
 }
@@ -48,6 +50,16 @@ void VelocityAdvector::_initializeParameters(VelocityAdvectorParameters params) 
     _validVelocities = params.validVelocities;
     _particleRadius = params.particleRadius;
     _velocityTransferMethod = params.velocityTransferMethod;
+
+    _baseChunkWidth = std::max(2, params.msbgBaseBlockWidth);
+    int refinementLevels = std::max(1, params.msbgRefinementLevels);
+    if (params.enableMSBG) {
+        int refinementScale = 1 << (refinementLevels - 1);
+        _chunkWidth = std::max(2, _baseChunkWidth / refinementScale);
+    } else {
+        _chunkWidth = _baseChunkWidth;
+    }
+    _numBlocksPerJob = std::max(1, 10 * _chunkWidth / std::max(2, _baseChunkWidth));
     
     _dx = _vfield->getGridCellSize();
     _chunkdx = _dx * _chunkWidth;

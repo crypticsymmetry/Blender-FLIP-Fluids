@@ -2855,6 +2855,102 @@ void FluidSimulation::setPICAPICRatio(double r) {
     _ratioPICAPIC = r;
 }
 
+void FluidSimulation::enableAdaptivePhaseFieldFLIP() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " enableAdaptivePhaseFieldFLIP" << std::endl);
+    _isAdaptivePhaseFieldFLIPEnabled = true;
+}
+
+void FluidSimulation::disableAdaptivePhaseFieldFLIP() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " disableAdaptivePhaseFieldFLIP" << std::endl);
+    _isAdaptivePhaseFieldFLIPEnabled = false;
+}
+
+bool FluidSimulation::isAdaptivePhaseFieldFLIPEnabled() {
+    return _isAdaptivePhaseFieldFLIPEnabled;
+}
+
+int FluidSimulation::getAdaptivePhaseFieldBandwidth() {
+    return _adaptivePhaseFieldBandwidth;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldBandwidth(int n) {
+    if (n < 1 || n > 64) {
+        std::string msg = "Error: adaptive phase field bandwidth must be in range [1, 64].\n";
+        msg += "value: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setAdaptivePhaseFieldBandwidth: " << n << std::endl);
+    _adaptivePhaseFieldBandwidth = n;
+}
+
+double FluidSimulation::getAdaptivePhaseFieldSmoothing() {
+    return _adaptivePhaseFieldSmoothing;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldSmoothing(double n) {
+    if (n < 0.0 || n > 1.0) {
+        std::string msg = "Error: adaptive phase field smoothing must be in range [0.0, 1.0].\n";
+        msg += "value: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setAdaptivePhaseFieldSmoothing: " << n << std::endl);
+    _adaptivePhaseFieldSmoothing = n;
+}
+
+void FluidSimulation::enableMSBG() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " enableMSBG" << std::endl);
+    _isMSBGEnabled = true;
+}
+
+void FluidSimulation::disableMSBG() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " disableMSBG" << std::endl);
+    _isMSBGEnabled = false;
+}
+
+bool FluidSimulation::isMSBGEnabled() {
+    return _isMSBGEnabled;
+}
+
+int FluidSimulation::getMSBGBaseBlockWidth() {
+    return _msbgBaseBlockWidth;
+}
+
+void FluidSimulation::setMSBGBaseBlockWidth(int n) {
+    if (n < 2 || n > 64) {
+        std::string msg = "Error: MSBG base block width must be in range [2, 64].\n";
+        msg += "value: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMSBGBaseBlockWidth: " << n << std::endl);
+    _msbgBaseBlockWidth = n;
+}
+
+int FluidSimulation::getMSBGRefinementLevels() {
+    return _msbgRefinementLevels;
+}
+
+void FluidSimulation::setMSBGRefinementLevels(int n) {
+    if (n < 1 || n > 6) {
+        std::string msg = "Error: MSBG refinement levels must be in range [1, 6].\n";
+        msg += "value: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMSBGRefinementLevels: " << n << std::endl);
+    _msbgRefinementLevels = n;
+}
+
 void FluidSimulation::enableFractureOptimization() {
     _logfile.log(std::ostringstream().flush() << 
                  _logfile.getTime() << " enableFractureOptimization" << std::endl);
@@ -5456,6 +5552,9 @@ _logfile.logString(_logfile.getTime() + " BEGIN       Advect Velocity Field");
         params.vfield = &_MACVelocity;
         params.validVelocities = &_validVelocities;
         params.particleRadius = radius;
+        params.enableMSBG = _isMSBGEnabled;
+        params.msbgBaseBlockWidth = _msbgBaseBlockWidth;
+        params.msbgRefinementLevels = _isAdaptivePhaseFieldFLIPEnabled ? _msbgRefinementLevels : 1;
 
         if (_velocityTransferMethod == VelocityTransferMethod::FLIP) {
             params.velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;
@@ -6752,6 +6851,9 @@ void FluidSimulation::_updateMarkerParticleVelocityAttributeGrid() {
     params.vfield = &_velocityAttributeGrid;
     params.validVelocities = &_velocityAttributeValidGrid;
     params.particleRadius = _liquidSDFParticleRadius;
+    params.enableMSBG = _isMSBGEnabled;
+    params.msbgBaseBlockWidth = _msbgBaseBlockWidth;
+    params.msbgRefinementLevels = _isAdaptivePhaseFieldFLIPEnabled ? _msbgRefinementLevels : 1;
 
     if (_velocityTransferMethod == VelocityTransferMethod::FLIP) {
         params.velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;

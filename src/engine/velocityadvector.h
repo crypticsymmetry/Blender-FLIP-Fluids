@@ -72,6 +72,9 @@ struct VelocityAdvectorParameters {
     ValidVelocityComponentGrid *validVelocities;
     double particleRadius = 1.0;
     VelocityAdvectorTransferMethod velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;
+    bool enableMSBG = false;
+    int msbgBaseBlockWidth = 10;
+    int msbgRefinementLevels = 1;
 };
 
 
@@ -186,6 +189,7 @@ private:
     double _particleRadius = 0.0;
 
     int _chunkWidth = 10;
+    int _baseChunkWidth = 10;
     int _numBlocksPerJob = 10;
     
 };

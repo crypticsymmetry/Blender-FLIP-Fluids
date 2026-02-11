@@ -123,6 +123,43 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             precision=2,
             subtype='FACTOR',
             ); exec(conv("PICAPIC_ratio"))
+    enable_adaptive_phase_field_flip = BoolProperty(
+            name="Enable Adaptive Phase Field FLIP",
+            description="Experimental: enable an adaptive phase-field guided update path for FLIP particle-to-grid transfer."
+                " This option is designed to be used together with sparse block settings below",
+            default=False,
+            ); exec(conv("enable_adaptive_phase_field_flip"))
+    adaptive_phase_field_bandwidth = IntProperty(
+            name="Phase Field Bandwidth",
+            description="Approximate narrow-band width used by the adaptive phase field update",
+            min=1, max=64,
+            default=4,
+            ); exec(conv("adaptive_phase_field_bandwidth"))
+    adaptive_phase_field_smoothing = FloatProperty(
+            name="Phase Field Smoothing",
+            description="Blend amount used to smooth the adaptive phase field signal",
+            min=0.0, max=1.0,
+            default=0.25,
+            precision=3,
+            subtype='FACTOR',
+            ); exec(conv("adaptive_phase_field_smoothing"))
+    enable_msbg = BoolProperty(
+            name="Enable MSBG Sparse Blocks",
+            description="Experimental: enable multiresolution sparse block grid controls for particle-to-grid transfer",
+            default=False,
+            ); exec(conv("enable_msbg"))
+    msbg_base_block_width = IntProperty(
+            name="MSBG Base Block Width",
+            description="Coarsest sparse block width in voxels",
+            min=2, max=64,
+            default=10,
+            ); exec(conv("msbg_base_block_width"))
+    msbg_refinement_levels = IntProperty(
+            name="MSBG Refinement Levels",
+            description="Number of sparse grid refinement levels used when adaptive phase field FLIP is enabled",
+            min=1, max=6,
+            default=1,
+            ); exec(conv("msbg_refinement_levels"))
     CFL_condition_number = IntProperty(
             name="Safety Factor (CFL Number)",
             description="Maximum number of voxels that a particle can travel"
@@ -228,6 +265,7 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
     simulation_method_expanded = BoolProperty(default=True); exec(conv("simulation_method_expanded"))
     simulation_stability_expanded = BoolProperty(default=False); exec(conv("simulation_stability_expanded"))
     multithreading_expanded = BoolProperty(default=True); exec(conv("multithreading_expanded"))
+    adaptive_phase_field_expanded = BoolProperty(default=False); exec(conv("adaptive_phase_field_expanded"))
     warnings_and_errors_expanded = BoolProperty(default=False); exec(conv("warnings_and_errors_expanded"))
 
 
@@ -243,6 +281,12 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         add(path + ".velocity_transfer_method",                  "Velocity Transfer Method",           group_id=0)
         add(path + ".PICFLIP_ratio",                             "PIC/FLIP Ratio",                     group_id=0)
         add(path + ".PICAPIC_ratio",                             "PIC/APIC Ratio",                     group_id=0)
+        add(path + ".enable_adaptive_phase_field_flip",          "Enable Adaptive Phase Field FLIP",   group_id=0)
+        add(path + ".adaptive_phase_field_bandwidth",            "Adaptive Phase Field Bandwidth",      group_id=0)
+        add(path + ".adaptive_phase_field_smoothing",            "Adaptive Phase Field Smoothing",      group_id=0)
+        add(path + ".enable_msbg",                               "Enable MSBG",                         group_id=0)
+        add(path + ".msbg_base_block_width",                     "MSBG Base Block Width",               group_id=0)
+        add(path + ".msbg_refinement_levels",                    "MSBG Refinement Levels",              group_id=0)
         add(path + ".CFL_condition_number",                      "CFL",                                group_id=0)
         add(path + ".enable_extreme_velocity_removal",           "Enable Extreme Velocity Removal",    group_id=0)
         add(path + ".enable_gpu_features",                       "Enable GPU Features",                group_id=1)

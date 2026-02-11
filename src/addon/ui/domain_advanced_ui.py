@@ -103,6 +103,29 @@ class FLIPFLUID_PT_DomainTypeAdvancedPanel(bpy.types.Panel):
 
         box = self.layout.box()
         row = box.row(align=True)
+        row.prop(aprops, "adaptive_phase_field_expanded",
+            icon="TRIA_DOWN" if aprops.adaptive_phase_field_expanded else "TRIA_RIGHT",
+            icon_only=True,
+            emboss=False
+        )
+        row.label(text="Adaptive Phase Field FLIP / MSBG (Experimental):")
+
+        if aprops.adaptive_phase_field_expanded:
+            column = box.column(align=True)
+            column.prop(aprops, "enable_adaptive_phase_field_flip")
+            column.prop(aprops, "adaptive_phase_field_bandwidth")
+            column.prop(aprops, "adaptive_phase_field_smoothing", slider=True)
+            column.separator()
+            column.prop(aprops, "enable_msbg")
+            row = column.row(align=True)
+            row.enabled = aprops.enable_msbg
+            row.prop(aprops, "msbg_base_block_width")
+            row = column.row(align=True)
+            row.enabled = aprops.enable_msbg and aprops.enable_adaptive_phase_field_flip
+            row.prop(aprops, "msbg_refinement_levels")
+
+        box = self.layout.box()
+        row = box.row(align=True)
         row.prop(aprops, "simulation_stability_expanded",
             icon="TRIA_DOWN" if aprops.simulation_stability_expanded else "TRIA_RIGHT",
             icon_only=True, 

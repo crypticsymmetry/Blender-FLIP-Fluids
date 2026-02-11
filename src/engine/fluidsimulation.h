@@ -1221,6 +1221,24 @@ public:
     void setPICAPICRatio(double r);
 
     /*
+        Adaptive phase field FLIP and sparse block grid (MSBG) controls.
+    */
+    void enableAdaptivePhaseFieldFLIP();
+    void disableAdaptivePhaseFieldFLIP();
+    bool isAdaptivePhaseFieldFLIPEnabled();
+    int getAdaptivePhaseFieldBandwidth();
+    void setAdaptivePhaseFieldBandwidth(int n);
+    double getAdaptivePhaseFieldSmoothing();
+    void setAdaptivePhaseFieldSmoothing(double n);
+    void enableMSBG();
+    void disableMSBG();
+    bool isMSBGEnabled();
+    int getMSBGBaseBlockWidth();
+    void setMSBGBaseBlockWidth(int n);
+    int getMSBGRefinementLevels();
+    void setMSBGRefinementLevels(int n);
+
+    /*
         Enable/Disable experimental optimization features
     */
     void enableExperimentalOptimizationFeatures();
@@ -2303,6 +2321,12 @@ private:
     int _maxParticlesPerVelocityAdvection = 5e6;
     std::thread _advectVelocityFieldThread;
     VelocityTransferMethod _velocityTransferMethod = VelocityTransferMethod::FLIP;
+    bool _isAdaptivePhaseFieldFLIPEnabled = false;
+    int _adaptivePhaseFieldBandwidth = 4;
+    double _adaptivePhaseFieldSmoothing = 0.25;
+    bool _isMSBGEnabled = false;
+    int _msbgBaseBlockWidth = 10;
+    int _msbgRefinementLevels = 1;
 
     // Calculate fluid curvature
     Array3d<float> _fluidSurfaceLevelSet;
