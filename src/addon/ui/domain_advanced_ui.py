@@ -101,6 +101,13 @@ class FLIPFLUID_PT_DomainTypeAdvancedPanel(bpy.types.Panel):
             else:
                 column.label(text="")
 
+            column.separator()
+            column.prop(aprops, "enable_adaptive_phase_field_level_set")
+            if aprops.enable_adaptive_phase_field_level_set:
+                row = column.row(align=True)
+                row.prop(aprops, "adaptive_phase_field_sparse_block_size")
+                row.prop(aprops, "adaptive_phase_field_levels")
+
         box = self.layout.box()
         row = box.row(align=True)
         row.prop(aprops, "simulation_stability_expanded",

@@ -471,6 +471,13 @@ def draw_resolution_settings(self, context, master_column):
         else:
             row.label(text="")
 
+        column.separator()
+        column.prop(aprops, "enable_adaptive_phase_field_level_set")
+        if aprops.enable_adaptive_phase_field_level_set:
+            row = column.row(align=True)
+            row.prop(aprops, "adaptive_phase_field_sparse_block_size")
+            row.prop(aprops, "adaptive_phase_field_levels")
+
     box = master_column.box()
     row = box.row(align=True)
     row.prop(sprops, "world_scale_expanded",
