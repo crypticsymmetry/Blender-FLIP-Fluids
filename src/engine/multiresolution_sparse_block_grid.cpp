@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include "multiresolution_sparse_block_grid.h"
 
 MultiresolutionSparseBlockGrid::MultiresolutionSparseBlockGrid() {}
@@ -87,13 +88,19 @@ void MultiresolutionSparseBlockGrid::setFine(int i, int j, int k, float value) {
 }
 
 void MultiresolutionSparseBlockGrid::setHierarchyMin(int i, int j, int k, float value) {
+    setHierarchyMin(i, j, k, value, (int)_gridLevels.size());
+}
+
+
+void MultiresolutionSparseBlockGrid::setHierarchyMin(int i, int j, int k, float value, int levelsToWrite) {
     if (_gridLevels.empty() || !_isPointInRange(i, j, k)) {
         return;
     }
 
-    for (size_t level = 0; level < _gridLevels.size(); level++) {
+    int maxLevel = std::max(1, std::min(levelsToWrite, (int)_gridLevels.size()));
+    for (int level = 0; level < maxLevel; level++) {
         GridLevel &gridLevel = _gridLevels[level];
-        BlockKey key = _getBlockKey(i, j, k, (int)level);
+        BlockKey key = _getBlockKey(i, j, k, level);
 
         auto blockIt = gridLevel.blocks.find(key);
         if (blockIt == gridLevel.blocks.end()) {
@@ -101,7 +108,7 @@ void MultiresolutionSparseBlockGrid::setHierarchyMin(int i, int j, int k, float 
                                                BlockData(gridLevel.blockWidth, gridLevel.fillValue)).first;
         }
 
-        GridIndex localIndex = _getLocalGridIndex(i, j, k, (int)level);
+        GridIndex localIndex = _getLocalGridIndex(i, j, k, level);
         float current = blockIt->second.values(localIndex);
         if (value < current) {
             blockIt->second.values.set(localIndex, value);

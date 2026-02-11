@@ -5469,9 +5469,11 @@ void FluidSimulation::_updateLiquidLevelSet() {
 
         if (_isAdaptivePhaseFieldLevelSetEnabled) {
             std::vector<vmath::vec3> *positions;
+            std::vector<vmath::vec3> *velocities;
             _markerParticles.getAttributeValues("POSITION", positions);
+            _markerParticles.getAttributeValues("VELOCITY", velocities);
             _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
-            _adaptivePhaseField.rebuildFromParticles(*positions, radius);
+            _adaptivePhaseField.rebuildFromParticles(*positions, velocities, radius, _currentFrameDeltaTime);
             _adaptivePhaseField.sampleIntoDenseGrid(*_liquidSDF.getPhiGrid());
         } else {
             _liquidSDF.calculateSignedDistanceField(_markerParticles, radius);

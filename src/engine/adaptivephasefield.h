@@ -37,7 +37,10 @@ public:
 
     void initialize(int i, int j, int k, double dx);
     void configureSparseGrid(int blockWidth, int levels);
-    void rebuildFromParticles(std::vector<vmath::vec3> &particles, double particleRadius);
+    void rebuildFromParticles(std::vector<vmath::vec3> &particles,
+                              std::vector<vmath::vec3> *velocities,
+                              double particleRadius,
+                              double dt);
     void sampleIntoDenseGrid(Array3d<float> &densePhi);
 
     int getActiveSparseBlockCount();
@@ -45,7 +48,9 @@ public:
 private:
     float _toPhaseField(float normalizedDistanceSq, float particleRadius, float bandRadius) const;
     float _phaseFieldToSignedDistance(float phaseField, float particleRadius, float bandRadius) const;
-    void _smoothPhaseField(Array3d<float> &phaseField);
+    void _smoothPhaseField(Array3d<float> &phaseField, Array3d<bool> &activeMask);
+    void _expandActiveMask(Array3d<bool> &activeMask);
+    int _getHierarchyLevelsForParticle(float speed, double dt) const;
 
     int _isize = 0;
     int _jsize = 0;
@@ -57,6 +62,9 @@ private:
     float _farDistance = 3.0f;
     int _smoothingIterations = 5;
     float _smoothingTimeStep = 0.05f;
+    int _smoothingBandLayers = 2;
+    float _velocityRefinementScale = 4.0f;
+    float _velocityBandExpansionScale = 1.5f;
 
     MultiresolutionSparseBlockGrid _phaseField;
     float _lastParticleRadius = 0.0f;

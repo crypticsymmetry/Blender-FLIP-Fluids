@@ -49,18 +49,29 @@ void AdaptivePhaseField::configureSparseGrid(int blockWidth, int levels) {
 }
 
 void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particles,
-                                              double particleRadius) {
+                                              std::vector<vmath::vec3> *velocities,
+                                              double particleRadius,
+                                              double dt) {
     _phaseField.clear();
 
     float bandRadius = _farDistance * (float)_dx;
-    float radius = (float)particleRadius;
-    _lastParticleRadius = radius;
-    float maxDistance = radius + bandRadius;
-    float maxDistanceSq = maxDistance * maxDistance;
-    int radiusInCells = (int)std::ceil(maxDistance / (float)_dx);
+    float baseRadius = (float)particleRadius;
+    _lastParticleRadius = baseRadius;
 
     for (size_t pidx = 0; pidx < particles.size(); pidx++) {
         vmath::vec3 p = particles[pidx];
+        float speed = 0.0f;
+        if (velocities != nullptr && pidx < velocities->size()) {
+            speed = velocities->at(pidx).length();
+        }
+
+        float velocityScale = std::max(0.0f, std::min(2.0f, (float)(speed * dt / _dx) * _velocityBandExpansionScale));
+        float particleBandRadius = bandRadius * (1.0f + velocityScale);
+        float maxDistance = baseRadius + particleBandRadius;
+        float maxDistanceSq = maxDistance * maxDistance;
+        int radiusInCells = (int)std::ceil(maxDistance / (float)_dx);
+        int levelsToWrite = _getHierarchyLevelsForParticle(speed, dt);
+
         int i0 = (int)std::floor((p.x / _dx)) - radiusInCells;
         int j0 = (int)std::floor((p.y / _dx)) - radiusInCells;
         int k0 = (int)std::floor((p.z / _dx)) - radiusInCells;
@@ -91,8 +102,8 @@ void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particle
                     }
 
                     float normalizedDistanceSq = distanceSq / maxDistanceSq;
-                    float phase = _toPhaseField(normalizedDistanceSq, radius, bandRadius);
-                    _phaseField.setHierarchyMin(i, j, k, 1.0f - phase);
+                    float phase = _toPhaseField(normalizedDistanceSq, baseRadius, particleBandRadius);
+                    _phaseField.setHierarchyMin(i, j, k, 1.0f - phase, levelsToWrite);
                 }
             }
         }
@@ -114,7 +125,20 @@ void AdaptivePhaseField::sampleIntoDenseGrid(Array3d<float> &densePhi) {
         }
     }
 
-    _smoothPhaseField(phaseField);
+    Array3d<bool> activeMask(densePhi.width, densePhi.height, densePhi.depth, false);
+    for (int k = 0; k < densePhi.depth; k++) {
+        for (int j = 0; j < densePhi.height; j++) {
+            for (int i = 0; i < densePhi.width; i++) {
+                float phase = phaseField(i, j, k);
+                if (phase > 0.0f && phase < 1.0f) {
+                    activeMask.set(i, j, k, true);
+                }
+            }
+        }
+    }
+
+    _expandActiveMask(activeMask);
+    _smoothPhaseField(phaseField, activeMask);
 
     for (int k = 0; k < densePhi.depth; k++) {
         for (int j = 0; j < densePhi.height; j++) {
@@ -154,7 +178,7 @@ float AdaptivePhaseField::_phaseFieldToSignedDistance(float phaseField,
     return distance;
 }
 
-void AdaptivePhaseField::_smoothPhaseField(Array3d<float> &phaseField) {
+void AdaptivePhaseField::_smoothPhaseField(Array3d<float> &phaseField, Array3d<bool> &activeMask) {
     Array3d<float> temp(phaseField.width, phaseField.height, phaseField.depth, 0.0f);
 
     for (int iter = 0; iter < _smoothingIterations; iter++) {
@@ -162,6 +186,11 @@ void AdaptivePhaseField::_smoothPhaseField(Array3d<float> &phaseField) {
             for (int j = 0; j < phaseField.height; j++) {
                 for (int i = 0; i < phaseField.width; i++) {
                     float center = phaseField(i, j, k);
+                    if (!activeMask(i, j, k)) {
+                        temp.set(i, j, k, center);
+                        continue;
+                    }
+
                     float sum = 0.0f;
                     int count = 0;
 
@@ -181,4 +210,46 @@ void AdaptivePhaseField::_smoothPhaseField(Array3d<float> &phaseField) {
 
         phaseField = temp;
     }
+}
+
+void AdaptivePhaseField::_expandActiveMask(Array3d<bool> &activeMask) {
+    for (int layer = 0; layer < _smoothingBandLayers; layer++) {
+        Array3d<bool> expanded = activeMask;
+        for (int k = 0; k < activeMask.depth; k++) {
+            for (int j = 0; j < activeMask.height; j++) {
+                for (int i = 0; i < activeMask.width; i++) {
+                    if (activeMask(i, j, k)) {
+                        continue;
+                    }
+
+                    bool hasActiveNeighbor = false;
+                    if (i > 0 && activeMask(i - 1, j, k)) { hasActiveNeighbor = true; }
+                    if (i + 1 < activeMask.width && activeMask(i + 1, j, k)) { hasActiveNeighbor = true; }
+                    if (j > 0 && activeMask(i, j - 1, k)) { hasActiveNeighbor = true; }
+                    if (j + 1 < activeMask.height && activeMask(i, j + 1, k)) { hasActiveNeighbor = true; }
+                    if (k > 0 && activeMask(i, j, k - 1)) { hasActiveNeighbor = true; }
+                    if (k + 1 < activeMask.depth && activeMask(i, j, k + 1)) { hasActiveNeighbor = true; }
+
+                    if (hasActiveNeighbor) {
+                        expanded.set(i, j, k, true);
+                    }
+                }
+            }
+        }
+        activeMask = expanded;
+    }
+}
+
+int AdaptivePhaseField::_getHierarchyLevelsForParticle(float speed, double dt) const {
+    if (_levels <= 1) {
+        return 1;
+    }
+
+    float normalizedSpeed = (float)(speed * dt / _dx) * _velocityRefinementScale;
+    normalizedSpeed = std::max(0.0f, std::min(1.0f, normalizedSpeed));
+
+    int minLevels = 1;
+    int maxLevels = _levels;
+    int levels = maxLevels - (int)std::round(normalizedSpeed * (float)(maxLevels - minLevels));
+    return std::max(minLevels, std::min(maxLevels, levels));
 }

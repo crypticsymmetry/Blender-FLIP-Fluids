@@ -40,6 +40,7 @@ public:
 
     void setFine(int i, int j, int k, float value);
     void setHierarchyMin(int i, int j, int k, float value);
+    void setHierarchyMin(int i, int j, int k, float value, int levelsToWrite);
     float sampleFine(int i, int j, int k);
 
     int getBlockCount() const;
