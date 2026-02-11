@@ -1306,6 +1306,9 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
 
     fluidsim.PICFLIP_ratio = __get_parameter_data(advanced.PICFLIP_ratio, frameno)
     fluidsim.PICAPIC_ratio = __get_parameter_data(advanced.PICAPIC_ratio, frameno)
+    fluidsim.enable_adaptive_phase_field_level_set = __get_parameter_data(advanced.enable_adaptive_phase_field_level_set, frameno)
+    fluidsim.adaptive_phase_field_sparse_block_size = __get_parameter_data(advanced.adaptive_phase_field_sparse_block_size, frameno)
+    fluidsim.adaptive_phase_field_levels = __get_parameter_data(advanced.adaptive_phase_field_levels, frameno)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     fluidsim.CFL_condition_number = CFL_number
@@ -2231,6 +2234,15 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
 
     PICAPIC_ratio = __get_parameter_data(advanced.PICAPIC_ratio, frameno)
     __set_property(fluidsim, 'PICAPIC_ratio', PICAPIC_ratio)
+
+    enable_adaptive_phase_field_level_set = __get_parameter_data(advanced.enable_adaptive_phase_field_level_set, frameno)
+    __set_property(fluidsim, 'enable_adaptive_phase_field_level_set', enable_adaptive_phase_field_level_set)
+
+    adaptive_phase_field_sparse_block_size = __get_parameter_data(advanced.adaptive_phase_field_sparse_block_size, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_sparse_block_size', adaptive_phase_field_sparse_block_size)
+
+    adaptive_phase_field_levels = __get_parameter_data(advanced.adaptive_phase_field_levels, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_levels', adaptive_phase_field_levels)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     __set_property(fluidsim, 'CFL_condition_number', CFL_number)

@@ -2982,6 +2982,56 @@ extern "C" {
         );
     }
 
+
+    EXPORTDLL void FluidSimulation_enable_adaptive_phase_field_level_set(FluidSimulation* obj,
+                                                                          int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableAdaptivePhaseFieldLevelSet, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_adaptive_phase_field_level_set(FluidSimulation* obj,
+                                                                           int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableAdaptivePhaseFieldLevelSet, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_adaptive_phase_field_level_set_enabled(FluidSimulation* obj,
+                                                                             int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isAdaptivePhaseFieldLevelSetEnabled, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_sparse_block_size(FluidSimulation* obj,
+                                                                              int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldSparseBlockSize, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_sparse_block_size(FluidSimulation* obj,
+                                                                               int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldSparseBlockSize, n, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_levels(FluidSimulation* obj,
+                                                                   int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldLevels, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_levels(FluidSimulation* obj,
+                                                                    int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldLevels, n, err
+        );
+    }
+
     EXPORTDLL void FluidSimulation_enable_fracture_optimization(FluidSimulation* obj, int *err) {
         CBindings::safe_execute_method_void_0param(
             obj, &FluidSimulation::enableFractureOptimization, err

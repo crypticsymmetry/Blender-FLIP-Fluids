@@ -2496,6 +2496,49 @@ class FluidSimulation(object):
         pb.init_lib_func(libfunc, [c_void_p, c_double, c_void_p], None)
         pb.execute_lib_func(libfunc, [self(), ratio])
 
+
+    @property
+    def enable_adaptive_phase_field_level_set(self):
+        libfunc = lib.FluidSimulation_is_adaptive_phase_field_level_set_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @enable_adaptive_phase_field_level_set.setter
+    def enable_adaptive_phase_field_level_set(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_adaptive_phase_field_level_set
+        else:
+            libfunc = lib.FluidSimulation_disable_adaptive_phase_field_level_set
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def adaptive_phase_field_sparse_block_size(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_sparse_block_size
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_sparse_block_size.setter
+    @decorators.check_ge(2)
+    def adaptive_phase_field_sparse_block_size(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_sparse_block_size
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_levels(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_levels
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_levels.setter
+    @decorators.check_ge(1)
+    @decorators.check_le(8)
+    def adaptive_phase_field_levels(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_levels
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
     @property
     def enable_fracture_optimization(self):
         libfunc = lib.FluidSimulation_is_fracture_optimization_enabled

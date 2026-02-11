@@ -41,6 +41,7 @@ SOFTWARE.
 #include "fragmentedvector.h"
 #include "logfile.h"
 #include "particlelevelset.h"
+#include "adaptivephasefield.h"
 #include "pressuresolver.h"
 #include "diffuseparticlesimulation.h"
 #include "velocityadvector.h"
@@ -1221,6 +1222,18 @@ public:
     void setPICAPICRatio(double r);
 
     /*
+        Enable/Disable experimental adaptive phase field level set using
+        a multiresolution sparse block grid (MSBG)-style backend.
+    */
+    void enableAdaptivePhaseFieldLevelSet();
+    void disableAdaptivePhaseFieldLevelSet();
+    bool isAdaptivePhaseFieldLevelSetEnabled();
+    int getAdaptivePhaseFieldSparseBlockSize();
+    void setAdaptivePhaseFieldSparseBlockSize(int n);
+    int getAdaptivePhaseFieldLevels();
+    void setAdaptivePhaseFieldLevels(int n);
+
+    /*
         Enable/Disable experimental optimization features
     */
     void enableExperimentalOptimizationFeatures();
@@ -2158,6 +2171,7 @@ private:
 
     // Update fluid material
     ParticleLevelSet _liquidSDF;
+    AdaptivePhaseField _adaptivePhaseField;
     std::vector<MeshFluidSource*> _meshFluidSources;
     ParticleSystem _markerParticles;
     std::vector<FluidMeshObject> _addedFluidMeshObjectQueue;
@@ -2201,6 +2215,9 @@ private:
     double _liquidSDFParticleScale = 1.0;
     double _liquidSDFParticleRadius = 0.0;
     double _liquidSDFSurfaceTensionParticleScale = 2.0;
+    bool _isAdaptivePhaseFieldLevelSetEnabled = false;
+    int _adaptivePhaseFieldSparseBlockSize = 8;
+    int _adaptivePhaseFieldLevels = 3;
     std::thread _updateLiquidLevelSetThread;
 
     // Fluid particle output

@@ -171,6 +171,26 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             update=lambda self, context: self.initialize_num_threads_auto_detect(),
             options={'HIDDEN'},
             ); exec(conv("threading_mode"))
+    enable_adaptive_phase_field_level_set = BoolProperty(
+            name="Enable Adaptive Phase Field / MSBG",
+            description="Use an experimental adaptive phase-field level set update with a sparse block backend",
+            default=False,
+            options={'HIDDEN'},
+            ); exec(conv("enable_adaptive_phase_field_level_set"))
+    adaptive_phase_field_sparse_block_size = IntProperty(
+            name="Adaptive Phase Field Block Size",
+            description="Sparse block width used by the experimental adaptive phase field grid",
+            min=2, max=64,
+            default=8,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_sparse_block_size"))
+    adaptive_phase_field_levels = IntProperty(
+            name="Adaptive Phase Field Levels",
+            description="Number of hierarchy levels used by the experimental adaptive phase field grid",
+            min=1, max=8,
+            default=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_levels"))
     enable_fracture_optimization = BoolProperty(
             name="Enable Fracture Optimizations",
             description="Enable optimizations when using animated fracture simulations as"
@@ -243,6 +263,9 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         add(path + ".velocity_transfer_method",                  "Velocity Transfer Method",           group_id=0)
         add(path + ".PICFLIP_ratio",                             "PIC/FLIP Ratio",                     group_id=0)
         add(path + ".PICAPIC_ratio",                             "PIC/APIC Ratio",                     group_id=0)
+        add(path + ".enable_adaptive_phase_field_level_set",      "Enable Adaptive Phase Field/MSBG",    group_id=0)
+        add(path + ".adaptive_phase_field_sparse_block_size",      "Adaptive Phase Field Block Size",     group_id=0)
+        add(path + ".adaptive_phase_field_levels",                 "Adaptive Phase Field Levels",         group_id=0)
         add(path + ".CFL_condition_number",                      "CFL",                                group_id=0)
         add(path + ".enable_extreme_velocity_removal",           "Enable Extreme Velocity Removal",    group_id=0)
         add(path + ".enable_gpu_features",                       "Enable GPU Features",                group_id=1)

@@ -2855,6 +2855,61 @@ void FluidSimulation::setPICAPICRatio(double r) {
     _ratioPICAPIC = r;
 }
 
+
+void FluidSimulation::enableAdaptivePhaseFieldLevelSet() {
+    _logfile.log(std::ostringstream().flush() << 
+                 _logfile.getTime() << " enableAdaptivePhaseFieldLevelSet" << std::endl);
+
+    _isAdaptivePhaseFieldLevelSetEnabled = true;
+}
+
+void FluidSimulation::disableAdaptivePhaseFieldLevelSet() {
+    _logfile.log(std::ostringstream().flush() << 
+                 _logfile.getTime() << " disableAdaptivePhaseFieldLevelSet" << std::endl);
+
+    _isAdaptivePhaseFieldLevelSetEnabled = false;
+}
+
+bool FluidSimulation::isAdaptivePhaseFieldLevelSetEnabled() {
+    return _isAdaptivePhaseFieldLevelSetEnabled;
+}
+
+int FluidSimulation::getAdaptivePhaseFieldSparseBlockSize() {
+    return _adaptivePhaseFieldSparseBlockSize;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldSparseBlockSize(int n) {
+    if (n <= 1) {
+        std::string msg = "Error: adaptive phase field sparse block size must be greater than 1.\n";
+        msg += "sparse block size: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() << 
+                 _logfile.getTime() << 
+                 " setAdaptivePhaseFieldSparseBlockSize: " << n << std::endl);
+
+    _adaptivePhaseFieldSparseBlockSize = n;
+}
+
+int FluidSimulation::getAdaptivePhaseFieldLevels() {
+    return _adaptivePhaseFieldLevels;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldLevels(int n) {
+    if (n <= 0 || n > 8) {
+        std::string msg = "Error: adaptive phase field levels must be in range [1, 8].\n";
+        msg += "levels: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() << 
+                 _logfile.getTime() << 
+                 " setAdaptivePhaseFieldLevels: " << n << std::endl);
+
+    _adaptivePhaseFieldLevels = n;
+}
+
 void FluidSimulation::enableFractureOptimization() {
     _logfile.log(std::ostringstream().flush() << 
                  _logfile.getTime() << " enableFractureOptimization" << std::endl);
@@ -4020,6 +4075,8 @@ void FluidSimulation::_initializeSimulationGrids(int isize, int jsize, int ksize
         _meshingVolumeSDF = MeshLevelSet(isize, jsize, ksize, dx);
     }
     _liquidSDF = ParticleLevelSet(isize, jsize, ksize, dx);
+    _adaptivePhaseField = AdaptivePhaseField(isize, jsize, ksize, dx);
+    _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
 
     TriangleMesh domainBoundaryMesh = _getBoundaryTriangleMesh();
     _domainMeshObject = MeshObject(isize, jsize, ksize, dx);
@@ -5410,7 +5467,15 @@ void FluidSimulation::_updateLiquidLevelSet() {
             radius = _liquidSDFSurfaceTensionParticleScale * _liquidSDFParticleRadius;
         }
 
-        _liquidSDF.calculateSignedDistanceField(_markerParticles, radius);
+        if (_isAdaptivePhaseFieldLevelSetEnabled) {
+            std::vector<vmath::vec3> *positions;
+            _markerParticles.getAttributeValues("POSITION", positions);
+            _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+            _adaptivePhaseField.rebuildFromParticles(*positions, radius);
+            _adaptivePhaseField.sampleIntoDenseGrid(*_liquidSDF.getPhiGrid());
+        } else {
+            _liquidSDF.calculateSignedDistanceField(_markerParticles, radius);
+        }
 
     }
 
