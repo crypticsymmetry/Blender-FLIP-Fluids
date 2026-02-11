@@ -37,6 +37,12 @@ public:
 
     void initialize(int i, int j, int k, double dx);
     void configureSparseGrid(int blockWidth, int levels);
+    void setParameters(float farDistance,
+                       int smoothingIterations,
+                       float smoothingTimeStep,
+                       int smoothingBandLayers,
+                       float velocityRefinementScale,
+                       float velocityBandExpansionScale);
     void rebuildFromParticles(std::vector<vmath::vec3> &particles,
                               std::vector<vmath::vec3> *velocities,
                               double particleRadius,

@@ -191,6 +191,52 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             default=3,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_levels"))
+    adaptive_phase_field_far_distance = FloatProperty(
+            name="Adaptive Phase Field Far Distance",
+            description="Narrow-band distance in voxels around the interface",
+            min=0.1, max=64.0,
+            default=3.0,
+            precision=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_far_distance"))
+    adaptive_phase_field_smoothing_iterations = IntProperty(
+            name="Adaptive Phase Field Smoothing Iterations",
+            description="Number of smoothing iterations applied to the adaptive phase field",
+            min=0, max=100,
+            default=5,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_smoothing_iterations"))
+    adaptive_phase_field_smoothing_time_step = FloatProperty(
+            name="Adaptive Phase Field Smoothing Time Step",
+            description="Time step used during adaptive phase field smoothing",
+            min=0.001, max=1.0,
+            default=0.05,
+            precision=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_smoothing_time_step"))
+    adaptive_phase_field_smoothing_band_layers = IntProperty(
+            name="Adaptive Phase Field Smoothing Band Layers",
+            description="Number of active narrow-band expansion layers used for smoothing",
+            min=0, max=16,
+            default=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_smoothing_band_layers"))
+    adaptive_phase_field_velocity_refinement_scale = FloatProperty(
+            name="Adaptive Phase Field Velocity Refinement Scale",
+            description="Controls how strongly high particle speeds bias fine-level reconstruction",
+            min=0.1, max=64.0,
+            default=4.0,
+            precision=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_velocity_refinement_scale"))
+    adaptive_phase_field_velocity_band_expansion_scale = FloatProperty(
+            name="Adaptive Phase Field Velocity Band Expansion Scale",
+            description="Controls how strongly high particle speeds expand local splat support",
+            min=0.1, max=16.0,
+            default=1.5,
+            precision=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_velocity_band_expansion_scale"))
     enable_fracture_optimization = BoolProperty(
             name="Enable Fracture Optimizations",
             description="Enable optimizations when using animated fracture simulations as"
@@ -266,6 +312,12 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         add(path + ".enable_adaptive_phase_field_level_set",      "Enable Adaptive Phase Field/MSBG",    group_id=0)
         add(path + ".adaptive_phase_field_sparse_block_size",      "Adaptive Phase Field Block Size",     group_id=0)
         add(path + ".adaptive_phase_field_levels",                 "Adaptive Phase Field Levels",         group_id=0)
+        add(path + ".adaptive_phase_field_far_distance",           "Adaptive Phase Field Far Distance",   group_id=0)
+        add(path + ".adaptive_phase_field_smoothing_iterations",    "Adaptive Phase Field Smoothing Iterations", group_id=0)
+        add(path + ".adaptive_phase_field_smoothing_time_step",     "Adaptive Phase Field Smoothing Time Step",  group_id=0)
+        add(path + ".adaptive_phase_field_smoothing_band_layers",   "Adaptive Phase Field Smoothing Band Layers", group_id=0)
+        add(path + ".adaptive_phase_field_velocity_refinement_scale","Adaptive Phase Field Velocity Refinement Scale", group_id=0)
+        add(path + ".adaptive_phase_field_velocity_band_expansion_scale", "Adaptive Phase Field Velocity Band Expansion Scale", group_id=0)
         add(path + ".CFL_condition_number",                      "CFL",                                group_id=0)
         add(path + ".enable_extreme_velocity_removal",           "Enable Extreme Velocity Removal",    group_id=0)
         add(path + ".enable_gpu_features",                       "Enable GPU Features",                group_id=1)

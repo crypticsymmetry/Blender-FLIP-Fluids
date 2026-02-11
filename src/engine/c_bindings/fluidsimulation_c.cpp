@@ -3032,6 +3032,90 @@ extern "C" {
         );
     }
 
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_far_distance(FluidSimulation* obj,
+                                                                           int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldFarDistance, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_far_distance(FluidSimulation* obj,
+                                                                          float d, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldFarDistance, d, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_smoothing_iterations(FluidSimulation* obj,
+                                                                                 int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldSmoothingIterations, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_smoothing_iterations(FluidSimulation* obj,
+                                                                                  int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldSmoothingIterations, n, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_smoothing_time_step(FluidSimulation* obj,
+                                                                                  int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldSmoothingTimeStep, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_smoothing_time_step(FluidSimulation* obj,
+                                                                                 float dt, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldSmoothingTimeStep, dt, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_smoothing_band_layers(FluidSimulation* obj,
+                                                                                  int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldSmoothingBandLayers, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_smoothing_band_layers(FluidSimulation* obj,
+                                                                                   int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldSmoothingBandLayers, n, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_velocity_refinement_scale(FluidSimulation* obj,
+                                                                                        int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldVelocityRefinementScale, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_velocity_refinement_scale(FluidSimulation* obj,
+                                                                                       float s, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldVelocityRefinementScale, s, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_velocity_band_expansion_scale(FluidSimulation* obj,
+                                                                                            int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldVelocityBandExpansionScale, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_velocity_band_expansion_scale(FluidSimulation* obj,
+                                                                                           float s, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldVelocityBandExpansionScale, s, err
+        );
+    }
+
     EXPORTDLL void FluidSimulation_enable_fracture_optimization(FluidSimulation* obj, int *err) {
         CBindings::safe_execute_method_void_0param(
             obj, &FluidSimulation::enableFractureOptimization, err

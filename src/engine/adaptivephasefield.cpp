@@ -48,6 +48,21 @@ void AdaptivePhaseField::configureSparseGrid(int blockWidth, int levels) {
     _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 1.0f);
 }
 
+
+void AdaptivePhaseField::setParameters(float farDistance,
+                                       int smoothingIterations,
+                                       float smoothingTimeStep,
+                                       int smoothingBandLayers,
+                                       float velocityRefinementScale,
+                                       float velocityBandExpansionScale) {
+    _farDistance = farDistance;
+    _smoothingIterations = smoothingIterations;
+    _smoothingTimeStep = smoothingTimeStep;
+    _smoothingBandLayers = smoothingBandLayers;
+    _velocityRefinementScale = velocityRefinementScale;
+    _velocityBandExpansionScale = velocityBandExpansionScale;
+}
+
 void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particles,
                                               std::vector<vmath::vec3> *velocities,
                                               double particleRadius,

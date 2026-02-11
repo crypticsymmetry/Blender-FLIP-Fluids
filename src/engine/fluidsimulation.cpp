@@ -2910,6 +2910,115 @@ void FluidSimulation::setAdaptivePhaseFieldLevels(int n) {
     _adaptivePhaseFieldLevels = n;
 }
 
+
+float FluidSimulation::getAdaptivePhaseFieldFarDistance() {
+    return _adaptivePhaseFieldFarDistance;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldFarDistance(float d) {
+    if (d <= 0.0f || d > 64.0f) {
+        std::string msg = "Error: adaptive phase field far distance must be in range (0.0, 64.0].\n";
+        msg += "far distance: " + _toString(d) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldFarDistance: " << d << std::endl);
+
+    _adaptivePhaseFieldFarDistance = d;
+}
+
+int FluidSimulation::getAdaptivePhaseFieldSmoothingIterations() {
+    return _adaptivePhaseFieldSmoothingIterations;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldSmoothingIterations(int n) {
+    if (n < 0 || n > 100) {
+        std::string msg = "Error: adaptive phase field smoothing iterations must be in range [0, 100].\n";
+        msg += "iterations: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldSmoothingIterations: " << n << std::endl);
+
+    _adaptivePhaseFieldSmoothingIterations = n;
+}
+
+float FluidSimulation::getAdaptivePhaseFieldSmoothingTimeStep() {
+    return _adaptivePhaseFieldSmoothingTimeStep;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldSmoothingTimeStep(float dt) {
+    if (dt <= 0.0f || dt > 1.0f) {
+        std::string msg = "Error: adaptive phase field smoothing time step must be in range (0.0, 1.0].\n";
+        msg += "time step: " + _toString(dt) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldSmoothingTimeStep: " << dt << std::endl);
+
+    _adaptivePhaseFieldSmoothingTimeStep = dt;
+}
+
+int FluidSimulation::getAdaptivePhaseFieldSmoothingBandLayers() {
+    return _adaptivePhaseFieldSmoothingBandLayers;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldSmoothingBandLayers(int n) {
+    if (n < 0 || n > 16) {
+        std::string msg = "Error: adaptive phase field smoothing band layers must be in range [0, 16].\n";
+        msg += "layers: " + _toString(n) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldSmoothingBandLayers: " << n << std::endl);
+
+    _adaptivePhaseFieldSmoothingBandLayers = n;
+}
+
+float FluidSimulation::getAdaptivePhaseFieldVelocityRefinementScale() {
+    return _adaptivePhaseFieldVelocityRefinementScale;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldVelocityRefinementScale(float s) {
+    if (s <= 0.0f || s > 64.0f) {
+        std::string msg = "Error: adaptive phase field velocity refinement scale must be in range (0.0, 64.0].\n";
+        msg += "scale: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldVelocityRefinementScale: " << s << std::endl);
+
+    _adaptivePhaseFieldVelocityRefinementScale = s;
+}
+
+float FluidSimulation::getAdaptivePhaseFieldVelocityBandExpansionScale() {
+    return _adaptivePhaseFieldVelocityBandExpansionScale;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldVelocityBandExpansionScale(float s) {
+    if (s <= 0.0f || s > 16.0f) {
+        std::string msg = "Error: adaptive phase field velocity band expansion scale must be in range (0.0, 16.0].\n";
+        msg += "scale: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldVelocityBandExpansionScale: " << s << std::endl);
+
+    _adaptivePhaseFieldVelocityBandExpansionScale = s;
+}
+
 void FluidSimulation::enableFractureOptimization() {
     _logfile.log(std::ostringstream().flush() << 
                  _logfile.getTime() << " enableFractureOptimization" << std::endl);
@@ -4077,6 +4186,12 @@ void FluidSimulation::_initializeSimulationGrids(int isize, int jsize, int ksize
     _liquidSDF = ParticleLevelSet(isize, jsize, ksize, dx);
     _adaptivePhaseField = AdaptivePhaseField(isize, jsize, ksize, dx);
     _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+    _adaptivePhaseField.setParameters(_adaptivePhaseFieldFarDistance,
+                                      _adaptivePhaseFieldSmoothingIterations,
+                                      _adaptivePhaseFieldSmoothingTimeStep,
+                                      _adaptivePhaseFieldSmoothingBandLayers,
+                                      _adaptivePhaseFieldVelocityRefinementScale,
+                                      _adaptivePhaseFieldVelocityBandExpansionScale);
 
     TriangleMesh domainBoundaryMesh = _getBoundaryTriangleMesh();
     _domainMeshObject = MeshObject(isize, jsize, ksize, dx);
@@ -5473,6 +5588,12 @@ void FluidSimulation::_updateLiquidLevelSet() {
             _markerParticles.getAttributeValues("POSITION", positions);
             _markerParticles.getAttributeValues("VELOCITY", velocities);
             _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+            _adaptivePhaseField.setParameters(_adaptivePhaseFieldFarDistance,
+                                              _adaptivePhaseFieldSmoothingIterations,
+                                              _adaptivePhaseFieldSmoothingTimeStep,
+                                              _adaptivePhaseFieldSmoothingBandLayers,
+                                              _adaptivePhaseFieldVelocityRefinementScale,
+                                              _adaptivePhaseFieldVelocityBandExpansionScale);
             _adaptivePhaseField.rebuildFromParticles(*positions, velocities, radius, _currentFrameDeltaTime);
             _adaptivePhaseField.sampleIntoDenseGrid(*_liquidSDF.getPhiGrid());
         } else {

@@ -2539,6 +2539,86 @@ class FluidSimulation(object):
         pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
         pb.execute_lib_func(libfunc, [self(), n])
 
+
+    @property
+    def adaptive_phase_field_far_distance(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_far_distance
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_far_distance.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_far_distance(self, d):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_far_distance
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), d])
+
+    @property
+    def adaptive_phase_field_smoothing_iterations(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_smoothing_iterations
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_smoothing_iterations.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_smoothing_iterations(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_smoothing_iterations
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_smoothing_time_step(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_smoothing_time_step
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_smoothing_time_step.setter
+    @decorators.check_gt_zero
+    @decorators.check_le(1.0)
+    def adaptive_phase_field_smoothing_time_step(self, dt):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_smoothing_time_step
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), dt])
+
+    @property
+    def adaptive_phase_field_smoothing_band_layers(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_smoothing_band_layers
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_smoothing_band_layers.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_smoothing_band_layers(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_smoothing_band_layers
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_velocity_refinement_scale(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_velocity_refinement_scale
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_velocity_refinement_scale.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_velocity_refinement_scale(self, s):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_velocity_refinement_scale
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), s])
+
+    @property
+    def adaptive_phase_field_velocity_band_expansion_scale(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_velocity_band_expansion_scale
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_velocity_band_expansion_scale.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_velocity_band_expansion_scale(self, s):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_velocity_band_expansion_scale
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), s])
+
     @property
     def enable_fracture_optimization(self):
         libfunc = lib.FluidSimulation_is_fracture_optimization_enabled

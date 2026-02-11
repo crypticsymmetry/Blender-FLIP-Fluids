@@ -1232,6 +1232,18 @@ public:
     void setAdaptivePhaseFieldSparseBlockSize(int n);
     int getAdaptivePhaseFieldLevels();
     void setAdaptivePhaseFieldLevels(int n);
+    float getAdaptivePhaseFieldFarDistance();
+    void setAdaptivePhaseFieldFarDistance(float d);
+    int getAdaptivePhaseFieldSmoothingIterations();
+    void setAdaptivePhaseFieldSmoothingIterations(int n);
+    float getAdaptivePhaseFieldSmoothingTimeStep();
+    void setAdaptivePhaseFieldSmoothingTimeStep(float dt);
+    int getAdaptivePhaseFieldSmoothingBandLayers();
+    void setAdaptivePhaseFieldSmoothingBandLayers(int n);
+    float getAdaptivePhaseFieldVelocityRefinementScale();
+    void setAdaptivePhaseFieldVelocityRefinementScale(float s);
+    float getAdaptivePhaseFieldVelocityBandExpansionScale();
+    void setAdaptivePhaseFieldVelocityBandExpansionScale(float s);
 
     /*
         Enable/Disable experimental optimization features
@@ -2218,6 +2230,12 @@ private:
     bool _isAdaptivePhaseFieldLevelSetEnabled = false;
     int _adaptivePhaseFieldSparseBlockSize = 8;
     int _adaptivePhaseFieldLevels = 3;
+    float _adaptivePhaseFieldFarDistance = 3.0f;
+    int _adaptivePhaseFieldSmoothingIterations = 5;
+    float _adaptivePhaseFieldSmoothingTimeStep = 0.05f;
+    int _adaptivePhaseFieldSmoothingBandLayers = 2;
+    float _adaptivePhaseFieldVelocityRefinementScale = 4.0f;
+    float _adaptivePhaseFieldVelocityBandExpansionScale = 1.5f;
     std::thread _updateLiquidLevelSetThread;
 
     // Fluid particle output

@@ -1309,6 +1309,12 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
     fluidsim.enable_adaptive_phase_field_level_set = __get_parameter_data(advanced.enable_adaptive_phase_field_level_set, frameno)
     fluidsim.adaptive_phase_field_sparse_block_size = __get_parameter_data(advanced.adaptive_phase_field_sparse_block_size, frameno)
     fluidsim.adaptive_phase_field_levels = __get_parameter_data(advanced.adaptive_phase_field_levels, frameno)
+    fluidsim.adaptive_phase_field_far_distance = __get_parameter_data(advanced.adaptive_phase_field_far_distance, frameno)
+    fluidsim.adaptive_phase_field_smoothing_iterations = __get_parameter_data(advanced.adaptive_phase_field_smoothing_iterations, frameno)
+    fluidsim.adaptive_phase_field_smoothing_time_step = __get_parameter_data(advanced.adaptive_phase_field_smoothing_time_step, frameno)
+    fluidsim.adaptive_phase_field_smoothing_band_layers = __get_parameter_data(advanced.adaptive_phase_field_smoothing_band_layers, frameno)
+    fluidsim.adaptive_phase_field_velocity_refinement_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_refinement_scale, frameno)
+    fluidsim.adaptive_phase_field_velocity_band_expansion_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_band_expansion_scale, frameno)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     fluidsim.CFL_condition_number = CFL_number
@@ -2243,6 +2249,24 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
 
     adaptive_phase_field_levels = __get_parameter_data(advanced.adaptive_phase_field_levels, frameno)
     __set_property(fluidsim, 'adaptive_phase_field_levels', adaptive_phase_field_levels)
+
+    adaptive_phase_field_far_distance = __get_parameter_data(advanced.adaptive_phase_field_far_distance, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_far_distance', adaptive_phase_field_far_distance)
+
+    adaptive_phase_field_smoothing_iterations = __get_parameter_data(advanced.adaptive_phase_field_smoothing_iterations, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_smoothing_iterations', adaptive_phase_field_smoothing_iterations)
+
+    adaptive_phase_field_smoothing_time_step = __get_parameter_data(advanced.adaptive_phase_field_smoothing_time_step, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_smoothing_time_step', adaptive_phase_field_smoothing_time_step)
+
+    adaptive_phase_field_smoothing_band_layers = __get_parameter_data(advanced.adaptive_phase_field_smoothing_band_layers, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_smoothing_band_layers', adaptive_phase_field_smoothing_band_layers)
+
+    adaptive_phase_field_velocity_refinement_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_refinement_scale, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_velocity_refinement_scale', adaptive_phase_field_velocity_refinement_scale)
+
+    adaptive_phase_field_velocity_band_expansion_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_band_expansion_scale, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_velocity_band_expansion_scale', adaptive_phase_field_velocity_band_expansion_scale)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     __set_property(fluidsim, 'CFL_condition_number', CFL_number)
