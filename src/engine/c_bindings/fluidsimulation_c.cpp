@@ -315,6 +315,21 @@ extern "C" {
         );
     }
 
+    EXPORTDLL int FluidSimulation_get_pressure_solver_method(FluidSimulation* obj,
+                                                             int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getPressureSolverMethod, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_pressure_solver_method(FluidSimulation* obj,
+                                                              int method,
+                                                              int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setPressureSolverMethod, method, err
+        );
+    }
+
     EXPORTDLL int FluidSimulation_get_pressure_solver_max_iterations(FluidSimulation* obj, 
                                                                      int *err) {
         return CBindings::safe_execute_method_ret_0param(
@@ -513,6 +528,27 @@ extern "C" {
                                                                     int *err) {
         CBindings::safe_execute_method_void_1param(
             obj, &FluidSimulation::setSurfaceSmoothingIterations, n, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_enable_surface_volume_preserving_smoothing(FluidSimulation* obj,
+                                                                               int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableSurfaceVolumePreservingSmoothing, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_surface_volume_preserving_smoothing(FluidSimulation* obj,
+                                                                                int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableSurfaceVolumePreservingSmoothing, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_surface_volume_preserving_smoothing_enabled(FluidSimulation* obj,
+                                                                                  int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isSurfaceVolumePreservingSmoothingEnabled, err
         );
     }
 
@@ -1995,6 +2031,20 @@ extern "C" {
         );
     }
 
+    EXPORTDLL int FluidSimulation_get_diffuse_max_emission_particles_per_emitter(
+            FluidSimulation* obj, int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getDiffuseMaxEmissionParticlesPerEmitter, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_diffuse_max_emission_particles_per_emitter(
+            FluidSimulation* obj, int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setDiffuseMaxEmissionParticlesPerEmitter, n, err
+        );
+    }
+
     EXPORTDLL double FluidSimulation_get_diffuse_foam_advection_strength(FluidSimulation* obj, 
                                                                          int *err) {
         return CBindings::safe_execute_method_ret_0param(
@@ -3113,6 +3163,209 @@ extern "C" {
                                                                                            float s, int *err) {
         CBindings::safe_execute_method_void_1param(
             obj, &FluidSimulation::setAdaptivePhaseFieldVelocityBandExpansionScale, s, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_alpha_phi(FluidSimulation* obj,
+                                                                        int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldAlphaPhi, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_alpha_phi(FluidSimulation* obj,
+                                                                       float a, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldAlphaPhi, a, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_density_threshold(FluidSimulation* obj,
+                                                                                int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldDensityThreshold, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_density_threshold(FluidSimulation* obj,
+                                                                               float t, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldDensityThreshold, t, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_enable_adaptive_phase_field_variable_density_pressure_projection(FluidSimulation* obj,
+                                                                                                     int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableAdaptivePhaseFieldVariableDensityPressureProjection, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_adaptive_phase_field_variable_density_pressure_projection(FluidSimulation* obj,
+                                                                                                      int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableAdaptivePhaseFieldVariableDensityPressureProjection, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_adaptive_phase_field_variable_density_pressure_projection_enabled(FluidSimulation* obj,
+                                                                                                        int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isAdaptivePhaseFieldVariableDensityPressureProjectionEnabled, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_liquid_density(FluidSimulation* obj,
+                                                                             int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldLiquidDensity, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_liquid_density(FluidSimulation* obj,
+                                                                            float d, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldLiquidDensity, d, err
+        );
+    }
+
+    EXPORTDLL float FluidSimulation_get_adaptive_phase_field_gas_density(FluidSimulation* obj,
+                                                                          int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldGasDensity, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_gas_density(FluidSimulation* obj,
+                                                                         float d, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldGasDensity, d, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_pressure_air_band_width(FluidSimulation* obj,
+                                                                                    int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldPressureAirBandWidth, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_pressure_air_band_width(FluidSimulation* obj,
+                                                                                     int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldPressureAirBandWidth, n, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_enable_adaptive_phase_field_particle_adaptivity(FluidSimulation* obj,
+                                                                                    int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableAdaptivePhaseFieldParticleAdaptivity, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_adaptive_phase_field_particle_adaptivity(FluidSimulation* obj,
+                                                                                     int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableAdaptivePhaseFieldParticleAdaptivity, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_adaptive_phase_field_particle_adaptivity_enabled(FluidSimulation* obj,
+                                                                                       int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isAdaptivePhaseFieldParticleAdaptivityEnabled, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_particle_max_level(FluidSimulation* obj,
+                                                                               int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldParticleMaxLevel, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_particle_max_level(FluidSimulation* obj,
+                                                                                int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldParticleMaxLevel, n, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_particle_coarsen_delay(FluidSimulation* obj,
+                                                                                   int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldParticleCoarsenDelay, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_particle_coarsen_delay(FluidSimulation* obj,
+                                                                                    int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldParticleCoarsenDelay, n, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_particle_min_particles_per_cell(FluidSimulation* obj,
+                                                                                            int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldParticleMinParticlesPerCell, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_particle_min_particles_per_cell(FluidSimulation* obj,
+                                                                                             int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldParticleMinParticlesPerCell, n, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_enable_adaptive_phase_field_two_phase_particles(FluidSimulation* obj,
+                                                                                    int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::enableAdaptivePhaseFieldTwoPhaseParticles, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_disable_adaptive_phase_field_two_phase_particles(FluidSimulation* obj,
+                                                                                     int *err) {
+        CBindings::safe_execute_method_void_0param(
+            obj, &FluidSimulation::disableAdaptivePhaseFieldTwoPhaseParticles, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_is_adaptive_phase_field_two_phase_particles_enabled(FluidSimulation* obj,
+                                                                                       int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::isAdaptivePhaseFieldTwoPhaseParticlesEnabled, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_air_particle_band_width(FluidSimulation* obj,
+                                                                                    int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldAirParticleBandWidth, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_air_particle_band_width(FluidSimulation* obj,
+                                                                                     int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldAirParticleBandWidth, n, err
+        );
+    }
+
+    EXPORTDLL int FluidSimulation_get_adaptive_phase_field_air_particles_per_cell(FluidSimulation* obj,
+                                                                                   int *err) {
+        return CBindings::safe_execute_method_ret_0param(
+            obj, &FluidSimulation::getAdaptivePhaseFieldAirParticlesPerCell, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_set_adaptive_phase_field_air_particles_per_cell(FluidSimulation* obj,
+                                                                                    int n, int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::setAdaptivePhaseFieldAirParticlesPerCell, n, err
         );
     }
 
@@ -4771,6 +5024,28 @@ extern "C" {
         }
     }
 
+    EXPORTDLL void FluidSimulation_get_marker_particle_phase_data_range(FluidSimulation* obj,
+                                                                        int start_idx, int end_idx, char *c_data, int *err) {
+        *err = CBindings::SUCCESS;
+        try {
+            obj->getMarkerParticlePhaseDataRange(start_idx, end_idx, c_data);
+        } catch (std::exception &ex) {
+            CBindings::set_error_message(ex);
+            *err = CBindings::FAIL;
+        }
+    }
+
+    EXPORTDLL void FluidSimulation_get_marker_particle_mass_data_range(FluidSimulation* obj,
+                                                                       int start_idx, int end_idx, char *c_data, int *err) {
+        *err = CBindings::SUCCESS;
+        try {
+            obj->getMarkerParticleMassDataRange(start_idx, end_idx, c_data);
+        } catch (std::exception &ex) {
+            CBindings::set_error_message(ex);
+            *err = CBindings::FAIL;
+        }
+    }
+
     EXPORTDLL void FluidSimulation_get_diffuse_particle_position_data_range(FluidSimulation* obj, 
                                                                             int start_idx, int end_idx, char *c_data, int *err) {
         *err = CBindings::SUCCESS;
@@ -4944,6 +5219,22 @@ extern "C" {
                                                                 int *err) {
         CBindings::safe_execute_method_void_1param(
             obj, &FluidSimulation::loadMarkerParticleIDData, data, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_load_marker_particle_phase_data(FluidSimulation* obj,
+                                                                   FluidSimulationMarkerParticlePhaseData data,
+                                                                   int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::loadMarkerParticlePhaseData, data, err
+        );
+    }
+
+    EXPORTDLL void FluidSimulation_load_marker_particle_mass_data(FluidSimulation* obj,
+                                                                  FluidSimulationMarkerParticleMassData data,
+                                                                  int *err) {
+        CBindings::safe_execute_method_void_1param(
+            obj, &FluidSimulation::loadMarkerParticleMassData, data, err
         );
     }
 

@@ -34,6 +34,8 @@ SOFTWARE.
 #ifndef FLUIDENGINE_PRESSURESOLVER_H
 #define FLUIDENGINE_PRESSURESOLVER_H
 
+#include <functional>
+
 #include "pcgsolver/sparsematrix.h"
 #include "gridindexkeymap.h"
 #include "gridindexvector.h"
@@ -95,6 +97,12 @@ struct WeightGrid {
 
 };
 
+enum class PressureSolverBackend : char {
+    PCG = 0,
+    FPCG = 1,
+    AMG_FPCG = 2
+};
+
 
 struct PressureSolverParameters {
     double cellwidth;
@@ -107,8 +115,18 @@ struct PressureSolverParameters {
     MACVelocityField *velocityFieldSolid;
     ValidVelocityComponentGrid *validVelocities;
     Array3d<float> *liquidSDF;
+    Array3d<float> *phaseField = nullptr;
     WeightGrid *weightGrid;
     Array3d<float> *pressureGrid;
+
+    bool isVariableDensityPressureProjectionEnabled = false;
+    float liquidDensity = 1000.0f;
+    float gasDensity = 1.0f;
+    int pressureAirBandWidthCells = 3;
+    PressureSolverBackend solverBackend = PressureSolverBackend::PCG;
+    int multigridLevels = 4;
+    int multigridPreSmoothIterations = 2;
+    int multigridPostSmoothIterations = 2;
 
     bool isSurfaceTensionEnabled = false;
     double surfaceTensionConstant;
@@ -135,6 +153,10 @@ public:
 
     int getIterations() { return _solverIterations; }
     float getError() { return _solverError; } 
+    int getRequestedBackendId() { return (int)_requestedSolverBackend; }
+    int getUsedBackendId() { return (int)_usedSolverBackend; }
+    bool isFallbackUsed() { return _isFallbackSolverUsed; }
+    int getAMGLevelsBuilt() { return _amgLevelsBuilt; }
 
 private:
 
@@ -187,9 +209,48 @@ private:
                                             SparseMatrixd *matrix);
     bool _solveLinearSystem(SparseMatrixd &matrix, std::vector<double> &rhs, 
                             std::vector<double> &soln);
+    bool _solveLinearSystemPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                               std::vector<double> &soln, int *iterations, double *error);
+    bool _solveLinearSystemFPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                                std::vector<double> &soln, int *iterations, double *error);
+    bool _solveLinearSystemAMGFPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                                   std::vector<double> &soln, int *iterations, double *error);
 
     bool _solveLinearSystemJacobi(SparseMatrixd &matrix, std::vector<double> &b, 
                                   std::vector<double> &x, int *iterations, double *error);
+
+    void _initializeBetaField();
+    float _getPhaseValue(int i, int j, int k) const;
+
+    struct AMGLevel {
+        SparseMatrixd matrix;
+        FixedSparseMatrixd fixedMatrix;
+        std::vector<double> diagonalInv;
+        std::vector<int> fineToCoarse;
+        std::vector<std::vector<int> > coarseToFine;
+        std::vector<GridIndex> coordinates;
+    };
+    bool _buildAMGHierarchy(SparseMatrixd &matrix, std::vector<AMGLevel> *hierarchy);
+    bool _buildCoarseAMGLevel(AMGLevel *fineLevel, AMGLevel *coarseLevel);
+    void _computeDiagonalInverse(const SparseMatrixd &matrix, std::vector<double> *diagInv);
+    void _applyFixedMatrix(const FixedSparseMatrixd &matrix, const std::vector<double> &x,
+                           std::vector<double> *result);
+    void _applyDiagonalPreconditioner(const std::vector<double> &diagInv,
+                                      const std::vector<double> &rhs, std::vector<double> *out);
+    void _smoothJacobi(const AMGLevel &level, const std::vector<double> &rhs,
+                       std::vector<double> *x, int iterations);
+    void _restrictResidual(const AMGLevel &fineLevel, const std::vector<double> &fineResidual,
+                           std::vector<double> *coarseResidual);
+    void _prolongateCorrection(const AMGLevel &fineLevel, const std::vector<double> &coarseCorrection,
+                               std::vector<double> *fineCorrection);
+    void _runAMGVcycle(const std::vector<AMGLevel> &hierarchy, int levelidx,
+                       const std::vector<double> &rhs, std::vector<double> *x);
+    bool _solveLinearSystemPreconditionedCG(
+            const SparseMatrixd &matrix,
+            const std::vector<double> &rhs,
+            std::vector<double> *soln,
+            const std::function<void (const std::vector<double> &, std::vector<double> *)> &preconditioner,
+            int *iterations, double *error);
 
     void _applyPressureToVelocityFieldMT(FluidMaterialGrid &mgrid, int dir);
     void _applyPressureToVelocityFieldThread(int startidx, int endidx,
@@ -213,8 +274,25 @@ private:
     MACVelocityField *_vFieldSolid;
     ValidVelocityComponentGrid *_validVelocities;
     Array3d<float> *_liquidSDF;
+    Array3d<float> *_phaseField = nullptr;
     WeightGrid *_weightGrid;
     Array3d<float> *_pressureGrid;
+
+    bool _isVariableDensityPressureProjectionEnabled = false;
+    double _liquidDensity = 1000.0;
+    double _gasDensity = 1.0;
+    int _pressureAirBandWidthCells = 3;
+    PressureSolverBackend _solverBackend = PressureSolverBackend::PCG;
+    PressureSolverBackend _requestedSolverBackend = PressureSolverBackend::PCG;
+    PressureSolverBackend _usedSolverBackend = PressureSolverBackend::PCG;
+    bool _isFallbackSolverUsed = false;
+    int _amgLevelsBuilt = 1;
+    int _multigridLevels = 4;
+    int _multigridPreSmoothIterations = 2;
+    int _multigridPostSmoothIterations = 2;
+    Array3d<float> _betaU;
+    Array3d<float> _betaV;
+    Array3d<float> _betaW;
 
     bool _isSurfaceTensionEnabled = false;
     double _surfaceTensionConstant;

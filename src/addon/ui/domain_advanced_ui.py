@@ -115,6 +115,26 @@ class FLIPFLUID_PT_DomainTypeAdvancedPanel(bpy.types.Panel):
                 row = column.row(align=True)
                 row.prop(aprops, "adaptive_phase_field_velocity_refinement_scale")
                 row.prop(aprops, "adaptive_phase_field_velocity_band_expansion_scale")
+                row = column.row(align=True)
+                row.prop(aprops, "adaptive_phase_field_alpha_phi")
+                row.prop(aprops, "adaptive_phase_field_density_threshold")
+                column.prop(aprops, "adaptive_phase_field_variable_density_pressure_projection")
+                if aprops.adaptive_phase_field_variable_density_pressure_projection:
+                    row = column.row(align=True)
+                    row.prop(aprops, "adaptive_phase_field_liquid_density")
+                    row.prop(aprops, "adaptive_phase_field_gas_density")
+                    column.prop(aprops, "adaptive_phase_field_pressure_air_band_width")
+                column.prop(aprops, "adaptive_phase_field_particle_adaptivity")
+                if aprops.adaptive_phase_field_particle_adaptivity:
+                    row = column.row(align=True)
+                    row.prop(aprops, "adaptive_phase_field_particle_max_level")
+                    row.prop(aprops, "adaptive_phase_field_particle_coarsen_delay")
+                    column.prop(aprops, "adaptive_phase_field_particle_min_particles_per_cell")
+                column.prop(aprops, "adaptive_phase_field_two_phase_particles")
+                if aprops.adaptive_phase_field_two_phase_particles:
+                    row = column.row(align=True)
+                    row.prop(aprops, "adaptive_phase_field_air_particle_band_width")
+                    row.prop(aprops, "adaptive_phase_field_air_particles_per_cell")
 
         box = self.layout.box()
         row = box.row(align=True)
@@ -134,6 +154,7 @@ class FLIPFLUID_PT_DomainTypeAdvancedPanel(bpy.types.Panel):
             column.prop(aprops, "enable_extreme_velocity_removal")
             column.separator()
             column = box.column(align=True)
+            column.prop(aprops, "pressure_solver_method")
             column.prop(aprops, "pressure_solver_max_iterations")
             column.prop(aprops, "viscosity_solver_max_iterations")
 
@@ -173,6 +194,7 @@ class FLIPFLUID_PT_DomainTypeAdvancedPanel(bpy.types.Panel):
 
             column = box.column()
             column.prop(aprops, "enable_fracture_optimization")
+            column.prop(aprops, "enable_volume_preserving_surface_smoothing")
         
         # Performance and optimization settings are hidden from the UI.
         # These should always be enabled for performance.

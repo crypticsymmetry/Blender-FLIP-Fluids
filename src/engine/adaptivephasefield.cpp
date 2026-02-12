@@ -38,14 +38,14 @@ void AdaptivePhaseField::initialize(int i, int j, int k, double dx) {
     _ksize = k;
     _dx = dx;
 
-    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 1.0f);
+    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 0.0f);
 }
 
 void AdaptivePhaseField::configureSparseGrid(int blockWidth, int levels) {
     _blockWidth = blockWidth;
     _levels = levels;
 
-    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 1.0f);
+    _phaseField.initialize(_isize, _jsize, _ksize, _blockWidth, _levels, 0.0f);
 }
 
 
@@ -54,13 +54,17 @@ void AdaptivePhaseField::setParameters(float farDistance,
                                        float smoothingTimeStep,
                                        int smoothingBandLayers,
                                        float velocityRefinementScale,
-                                       float velocityBandExpansionScale) {
+                                       float velocityBandExpansionScale,
+                                       float alphaPhi,
+                                       float densityThreshold) {
     _farDistance = farDistance;
     _smoothingIterations = smoothingIterations;
     _smoothingTimeStep = smoothingTimeStep;
     _smoothingBandLayers = smoothingBandLayers;
     _velocityRefinementScale = velocityRefinementScale;
     _velocityBandExpansionScale = velocityBandExpansionScale;
+    _alphaPhi = alphaPhi;
+    _densityThreshold = densityThreshold;
 }
 
 void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particles,
@@ -116,16 +120,17 @@ void AdaptivePhaseField::rebuildFromParticles(std::vector<vmath::vec3> &particle
                         continue;
                     }
 
-                    float normalizedDistanceSq = distanceSq / maxDistanceSq;
-                    float phase = _toPhaseField(normalizedDistanceSq, baseRadius, particleBandRadius);
-                    _phaseField.setHierarchyMin(i, j, k, 1.0f - phase, levelsToWrite);
+                    float weight = _kernelWeight(distanceSq, maxDistance);
+                    if (weight > 0.0f) {
+                        _phaseField.setHierarchyAdd(i, j, k, weight, levelsToWrite);
+                    }
                 }
             }
         }
     }
 }
 
-void AdaptivePhaseField::sampleIntoDenseGrid(Array3d<float> &densePhi) {
+void AdaptivePhaseField::sampleIntoDenseGrid(Array3d<float> &densePhi, Array3d<float> *densePhase) {
     float bandRadius = _farDistance * (float)_dx;
     float particleRadius = _lastParticleRadius > 0.0f ? _lastParticleRadius : (float)_dx * 0.5f;
 
@@ -133,9 +138,9 @@ void AdaptivePhaseField::sampleIntoDenseGrid(Array3d<float> &densePhi) {
     for (int k = 0; k < densePhi.depth; k++) {
         for (int j = 0; j < densePhi.height; j++) {
             for (int i = 0; i < densePhi.width; i++) {
-                float invPhase = _phaseField.sampleFine(i, j, k);
-                float phase = 1.0f - invPhase;
-                phaseField.set(i, j, k, std::max(0.0f, std::min(1.0f, phase)));
+                float rawDensity = _phaseField.sampleFine(i, j, k);
+                float phase = _compressPhaseField(rawDensity);
+                phaseField.set(i, j, k, phase);
             }
         }
     }
@@ -155,6 +160,19 @@ void AdaptivePhaseField::sampleIntoDenseGrid(Array3d<float> &densePhi) {
     _expandActiveMask(activeMask);
     _smoothPhaseField(phaseField, activeMask);
 
+    if (densePhase != nullptr &&
+            densePhase->width == densePhi.width &&
+            densePhase->height == densePhi.height &&
+            densePhase->depth == densePhi.depth) {
+        for (int k = 0; k < densePhi.depth; k++) {
+            for (int j = 0; j < densePhi.height; j++) {
+                for (int i = 0; i < densePhi.width; i++) {
+                    densePhase->set(i, j, k, phaseField(i, j, k));
+                }
+            }
+        }
+    }
+
     for (int k = 0; k < densePhi.depth; k++) {
         for (int j = 0; j < densePhi.height; j++) {
             for (int i = 0; i < densePhi.width; i++) {
@@ -168,14 +186,29 @@ int AdaptivePhaseField::getActiveSparseBlockCount() {
     return _phaseField.getBlockCount();
 }
 
-float AdaptivePhaseField::_toPhaseField(float normalizedDistanceSq,
-                                        float particleRadius,
-                                        float bandRadius) const {
-    normalizedDistanceSq = std::max(0.0f, std::min(1.0f, normalizedDistanceSq));
-    float distance = std::sqrt(normalizedDistanceSq) * (particleRadius + bandRadius) - particleRadius;
-    float t = (distance + particleRadius) / (2.0f * particleRadius + bandRadius);
-    t = std::max(0.0f, std::min(1.0f, t));
-    return 1.0f - t;
+float AdaptivePhaseField::_kernelWeight(float distanceSq, float supportRadius) const {
+    if (supportRadius <= 0.0f) {
+        return 0.0f;
+    }
+
+    float invSupportRadiusSq = 1.0f / (supportRadius * supportRadius);
+    float q = 1.0f - distanceSq * invSupportRadiusSq;
+    if (q <= 0.0f) {
+        return 0.0f;
+    }
+
+    return q * q * q;
+}
+
+float AdaptivePhaseField::_compressPhaseField(float rawDensity) const {
+    float compressedDensity = rawDensity - _densityThreshold;
+    if (compressedDensity <= 0.0f) {
+        return 0.0f;
+    }
+
+    float denom = std::max(_alphaPhi, 1e-6f);
+    float phase = std::sqrt(compressedDensity / denom);
+    return std::max(0.0f, std::min(1.0f, phase));
 }
 
 float AdaptivePhaseField::_phaseFieldToSignedDistance(float phaseField,

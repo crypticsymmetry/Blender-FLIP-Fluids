@@ -199,6 +199,12 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
     pressure_solver_max_error_frame = IntProperty(default=-1); exec(conv("pressure_solver_max_error_frame"))
     pressure_solver_max_stress = FloatProperty(default=-1); exec(conv("pressure_solver_max_stress"))
     pressure_solver_max_stress_frame = IntProperty(default=-1); exec(conv("pressure_solver_max_stress_frame"))
+    pressure_solver_steps_pcg = IntProperty(default=0); exec(conv("pressure_solver_steps_pcg"))
+    pressure_solver_steps_fpcg = IntProperty(default=0); exec(conv("pressure_solver_steps_fpcg"))
+    pressure_solver_steps_amg_fpcg = IntProperty(default=0); exec(conv("pressure_solver_steps_amg_fpcg"))
+    pressure_solver_fallback_count = IntProperty(default=0); exec(conv("pressure_solver_fallback_count"))
+    pressure_solver_max_amg_levels = IntProperty(default=1); exec(conv("pressure_solver_max_amg_levels"))
+    pressure_solver_max_amg_levels_frame = IntProperty(default=-1); exec(conv("pressure_solver_max_amg_levels_frame"))
 
     viscosity_solver_enabled = BoolProperty(default=False); exec(conv("viscosity_solver_enabled"))
     viscosity_solver_failures = IntProperty(default=-1); exec(conv("viscosity_solver_failures"))
@@ -233,6 +239,10 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
     frame_pressure_solver_error = FloatProperty(default=0.0); exec(conv("frame_pressure_solver_error"))
     frame_pressure_solver_iterations = IntProperty(default=-1); exec(conv("frame_pressure_solver_iterations"))
     frame_pressure_solver_max_iterations = IntProperty(default=-1); exec(conv("frame_pressure_solver_max_iterations"))
+    frame_pressure_solver_requested_method = IntProperty(default=0); exec(conv("frame_pressure_solver_requested_method"))
+    frame_pressure_solver_used_method = IntProperty(default=0); exec(conv("frame_pressure_solver_used_method"))
+    frame_pressure_solver_fallback_used = BoolProperty(default=False); exec(conv("frame_pressure_solver_fallback_used"))
+    frame_pressure_solver_amg_levels_built = IntProperty(default=1); exec(conv("frame_pressure_solver_amg_levels_built"))
     frame_pressure_solver_stress = PointerProperty(type=SolverStressProperties); exec(conv("frame_pressure_solver_stress"))
 
     frame_viscosity_solver_enabled = BoolProperty(default=False); exec(conv("frame_viscosity_solver_enabled"))
@@ -349,6 +359,10 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
             "frame_pressure_solver_error",
             "frame_pressure_solver_iterations",
             "frame_pressure_solver_max_iterations",
+            "frame_pressure_solver_requested_method",
+            "frame_pressure_solver_used_method",
+            "frame_pressure_solver_fallback_used",
+            "frame_pressure_solver_amg_levels_built",
             "frame_viscosity_solver_enabled",
             "frame_viscosity_solver_success",
             "frame_viscosity_solver_error",
@@ -530,6 +544,10 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
             self.frame_pressure_solver_error = data['pressure_solver_error']
             self.frame_pressure_solver_iterations = data['pressure_solver_iterations']
             self.frame_pressure_solver_max_iterations = data['pressure_solver_max_iterations']
+            self.frame_pressure_solver_requested_method = data.get('pressure_solver_requested_method', 0)
+            self.frame_pressure_solver_used_method = data.get('pressure_solver_used_method', 0)
+            self.frame_pressure_solver_fallback_used = bool(data.get('pressure_solver_fallback_used', 0))
+            self.frame_pressure_solver_amg_levels_built = data.get('pressure_solver_amg_levels_built', 1)
             stress_pct = 100 * (self.frame_pressure_solver_iterations / self.frame_pressure_solver_max_iterations)
             self.frame_pressure_solver_stress.set_stress_level_pct(stress_pct)
 
@@ -1276,6 +1294,12 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
         pressure_steps = 0
         pressure_max_stress = 0.0
         pressure_max_stress_frame = -1
+        pressure_steps_pcg = 0
+        pressure_steps_fpcg = 0
+        pressure_steps_amg_fpcg = 0
+        pressure_fallback_count = 0
+        pressure_max_amg_levels = 1
+        pressure_max_amg_levels_frame = -1
 
         viscosity_enabled = False
         viscosity_max_error = 0.0
@@ -1307,6 +1331,19 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
                 if stress > pressure_max_stress:
                     pressure_max_stress = stress
                     pressure_max_stress_frame = frameno
+                used_method = int(fdata.get("pressure_solver_used_method", 0))
+                if used_method == 0:
+                    pressure_steps_pcg += fdata["substeps"]
+                elif used_method == 1:
+                    pressure_steps_fpcg += fdata["substeps"]
+                elif used_method == 2:
+                    pressure_steps_amg_fpcg += fdata["substeps"]
+                if bool(fdata.get("pressure_solver_fallback_used", False)):
+                    pressure_fallback_count += 1
+                amg_levels = int(fdata.get("pressure_solver_amg_levels_built", 1))
+                if amg_levels > pressure_max_amg_levels:
+                    pressure_max_amg_levels = amg_levels
+                    pressure_max_amg_levels_frame = frameno
 
             if "viscosity_solver_enabled" in fdata:
                 viscosity_enabled = viscosity_enabled or bool(fdata["viscosity_solver_enabled"])
@@ -1333,6 +1370,12 @@ class DomainStatsProperties(bpy.types.PropertyGroup):
         self.pressure_solver_max_error_frame = pressure_max_error_frame
         self.pressure_solver_max_stress = pressure_max_stress
         self.pressure_solver_max_stress_frame = pressure_max_stress_frame
+        self.pressure_solver_steps_pcg = pressure_steps_pcg
+        self.pressure_solver_steps_fpcg = pressure_steps_fpcg
+        self.pressure_solver_steps_amg_fpcg = pressure_steps_amg_fpcg
+        self.pressure_solver_fallback_count = pressure_fallback_count
+        self.pressure_solver_max_amg_levels = pressure_max_amg_levels
+        self.pressure_solver_max_amg_levels_frame = pressure_max_amg_levels_frame
 
         self.viscosity_solver_enabled = viscosity_enabled
         self.viscosity_solver_failures = viscosity_failures

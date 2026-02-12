@@ -92,6 +92,10 @@ struct FluidSimulationFrameStats {
     double pressureSolverError = 0.0;
     int pressureSolverIterations = 0;
     int pressureSolverMaxIterations = 0;
+    int pressureSolverRequestedMethod = 0;
+    int pressureSolverUsedMethod = 0;
+    int pressureSolverFallbackUsed = 0;
+    int pressureSolverAMGLevelsBuilt = 1;
 
     int viscositySolverEnabled = 1;
     int viscositySolverSuccess = 0;
@@ -195,6 +199,16 @@ struct FluidSimulationMarkerParticleViscosityData {
 struct FluidSimulationMarkerParticleIDData {
     int size = 0;
     char *id;
+};
+
+struct FluidSimulationMarkerParticlePhaseData {
+    int size = 0;
+    char *phase;
+};
+
+struct FluidSimulationMarkerParticleMassData {
+    int size = 0;
+    char *mass;
 };
 
 struct FluidSimulationDiffuseParticleData {
@@ -338,6 +352,9 @@ public:
     /*
         Solver Parameters
     */
+    int getPressureSolverMethod();
+    void setPressureSolverMethod(int method);
+
     int getPressureSolverMaxIterations();
     void setPressureSolverMaxIterations(int n);
 
@@ -410,6 +427,9 @@ public:
     void setSurfaceSmoothingValue(double s);
     int getSurfaceSmoothingIterations();
     void setSurfaceSmoothingIterations(int n);
+    void enableSurfaceVolumePreservingSmoothing();
+    void disableSurfaceVolumePreservingSmoothing();
+    bool isSurfaceVolumePreservingSmoothingEnabled();
 
     /*
         If set, only fluid inside of this object will be meshed
@@ -908,6 +928,8 @@ public:
     void setDiffuseParticleTurbulenceEmissionRate(double r);
     double getDiffuseParticleDustEmissionRate();
     void setDiffuseParticleDustEmissionRate(double r);
+    int getDiffuseMaxEmissionParticlesPerEmitter();
+    void setDiffuseMaxEmissionParticlesPerEmitter(int n);
 
     /*
         Advection strength in range [0.0, 1.0] controls how much the foam moves 
@@ -1244,6 +1266,35 @@ public:
     void setAdaptivePhaseFieldVelocityRefinementScale(float s);
     float getAdaptivePhaseFieldVelocityBandExpansionScale();
     void setAdaptivePhaseFieldVelocityBandExpansionScale(float s);
+    float getAdaptivePhaseFieldAlphaPhi();
+    void setAdaptivePhaseFieldAlphaPhi(float a);
+    float getAdaptivePhaseFieldDensityThreshold();
+    void setAdaptivePhaseFieldDensityThreshold(float t);
+    void enableAdaptivePhaseFieldVariableDensityPressureProjection();
+    void disableAdaptivePhaseFieldVariableDensityPressureProjection();
+    bool isAdaptivePhaseFieldVariableDensityPressureProjectionEnabled();
+    float getAdaptivePhaseFieldLiquidDensity();
+    void setAdaptivePhaseFieldLiquidDensity(float d);
+    float getAdaptivePhaseFieldGasDensity();
+    void setAdaptivePhaseFieldGasDensity(float d);
+    int getAdaptivePhaseFieldPressureAirBandWidth();
+    void setAdaptivePhaseFieldPressureAirBandWidth(int n);
+    void enableAdaptivePhaseFieldParticleAdaptivity();
+    void disableAdaptivePhaseFieldParticleAdaptivity();
+    bool isAdaptivePhaseFieldParticleAdaptivityEnabled();
+    int getAdaptivePhaseFieldParticleMaxLevel();
+    void setAdaptivePhaseFieldParticleMaxLevel(int n);
+    int getAdaptivePhaseFieldParticleCoarsenDelay();
+    void setAdaptivePhaseFieldParticleCoarsenDelay(int n);
+    int getAdaptivePhaseFieldParticleMinParticlesPerCell();
+    void setAdaptivePhaseFieldParticleMinParticlesPerCell(int n);
+    void enableAdaptivePhaseFieldTwoPhaseParticles();
+    void disableAdaptivePhaseFieldTwoPhaseParticles();
+    bool isAdaptivePhaseFieldTwoPhaseParticlesEnabled();
+    int getAdaptivePhaseFieldAirParticleBandWidth();
+    void setAdaptivePhaseFieldAirParticleBandWidth(int n);
+    int getAdaptivePhaseFieldAirParticlesPerCell();
+    void setAdaptivePhaseFieldAirParticlesPerCell(int n);
 
     /*
         Enable/Disable experimental optimization features
@@ -1496,6 +1547,8 @@ public:
     void getMarkerParticleUIDDataRange(int start_idx, int end_idx, char *data);
     void getMarkerParticleViscosityDataRange(int start_idx, int end_idx, char *data);
     void getMarkerParticleIDDataRange(int start_idx, int end_idx, char *data);
+    void getMarkerParticlePhaseDataRange(int start_idx, int end_idx, char *data);
+    void getMarkerParticleMassDataRange(int start_idx, int end_idx, char *data);
     void getDiffuseParticlePositionDataRange(int start_idx, int end_idx, char *data);
     void getDiffuseParticleVelocityDataRange(int start_idx, int end_idx, char *data);
     void getDiffuseParticleLifetimeDataRange(int start_idx, int end_idx, char *data);
@@ -1529,6 +1582,8 @@ public:
     void loadMarkerParticleUIDData(FluidSimulationMarkerParticleUIDData data);
     void loadMarkerParticleViscosityData(FluidSimulationMarkerParticleViscosityData data);
     void loadMarkerParticleIDData(FluidSimulationMarkerParticleIDData data);
+    void loadMarkerParticlePhaseData(FluidSimulationMarkerParticlePhaseData data);
+    void loadMarkerParticleMassData(FluidSimulationMarkerParticleMassData data);
     void loadDiffuseParticleData(FluidSimulationDiffuseParticleData data);
 
 private:   
@@ -1536,6 +1591,11 @@ private:
     enum class VelocityTransferMethod : char { 
         FLIP = 0x00, 
         APIC = 0x01
+    };
+
+    enum class MarkerParticlePhase : int {
+        air = 0,
+        liquid = 1
     };
 
     enum class UIDAttribute : int { 
@@ -1661,6 +1721,14 @@ private:
         FragmentedVector<MarkerParticleID> particles;
     };
 
+    struct MarkerParticlePhaseLoadData {
+        FragmentedVector<int> particles;
+    };
+
+    struct MarkerParticleMassLoadData {
+        FragmentedVector<float> particles;
+    };
+
 
     struct MarkerParticleAttributes {
         int sourceID = 0;
@@ -1773,7 +1841,9 @@ private:
                               MarkerParticleSourceIDLoadData &sourceIDData,
                               MarkerParticleViscosityLoadData &viscosityData,
                               MarkerParticleIDLoadData &idData,
-                              MarkerParticleUIDLoadData &UIDData);
+                              MarkerParticleUIDLoadData &UIDData,
+                              MarkerParticlePhaseLoadData &phaseData,
+                              MarkerParticleMassLoadData &massData);
     void _loadDiffuseParticles(DiffuseParticleLoadData &data);
     void _initializeFluidParticleUIDAttributeReuseData();
 
@@ -1954,6 +2024,11 @@ private:
                                   AABB &boundary);
     float _getMarkerParticleSpeedLimit(double dt);
     void _removeMarkerParticles(double dt);
+    void _updateAdaptivePhaseFieldParticleAdaptivity();
+    void _updateAdaptivePhaseFieldAirParticles();
+    void _rebuildAdaptivePhaseFieldPhaseGridFromTwoPhaseParticles(double particleRadius);
+    int _getAdaptivePhaseFieldTargetParticleLevel(float signedDistance) const;
+    vmath::vec3 _getAdaptivePhaseFieldSplitOffset(int childIndex, float baseOffset, float jitterAmount);
 
     /*
         #. Update Fluid Objects
@@ -2064,6 +2139,7 @@ private:
                                      std::vector<MarkerParticleType> &fluidParticleTypes);
     void _classifyFluidParticleTypesThread(int startidx, int endidx,
                                            std::vector<vmath::vec3> *positions,
+                                           std::vector<int> *phases,
                                            Array3d<bool> *isBoundaryCell,
                                            std::vector<MarkerParticleType> *fluidParticleTypes);
     void _generateFluidParticleDataFFP3(ParticleSystem &fluidParticles, FluidParticleDataFFP3 &dataFFP3);
@@ -2183,6 +2259,7 @@ private:
 
     // Update fluid material
     ParticleLevelSet _liquidSDF;
+    Array3d<float> _phaseFieldGrid;
     AdaptivePhaseField _adaptivePhaseField;
     std::vector<MeshFluidSource*> _meshFluidSources;
     ParticleSystem _markerParticles;
@@ -2202,6 +2279,8 @@ private:
     std::vector<MarkerParticleUIDLoadData> _markerParticleUIDLoadQueue;
     std::vector<MarkerParticleViscosityLoadData> _markerParticleViscosityLoadQueue;
     std::vector<MarkerParticleIDLoadData> _markerParticleIDLoadQueue;
+    std::vector<MarkerParticlePhaseLoadData> _markerParticlePhaseLoadQueue;
+    std::vector<MarkerParticleMassLoadData> _markerParticleMassLoadQueue;
     std::vector<DiffuseParticleLoadData> _diffuseParticleLoadQueue;
 
     // Update obstacles
@@ -2228,7 +2307,7 @@ private:
     double _liquidSDFParticleRadius = 0.0;
     double _liquidSDFSurfaceTensionParticleScale = 2.0;
     bool _isAdaptivePhaseFieldLevelSetEnabled = false;
-    int _adaptivePhaseFieldSparseBlockSize = 8;
+    int _adaptivePhaseFieldSparseBlockSize = 16;
     int _adaptivePhaseFieldLevels = 3;
     float _adaptivePhaseFieldFarDistance = 3.0f;
     int _adaptivePhaseFieldSmoothingIterations = 5;
@@ -2236,6 +2315,21 @@ private:
     int _adaptivePhaseFieldSmoothingBandLayers = 2;
     float _adaptivePhaseFieldVelocityRefinementScale = 4.0f;
     float _adaptivePhaseFieldVelocityBandExpansionScale = 1.5f;
+    float _adaptivePhaseFieldAlphaPhi = 1.0f;
+    float _adaptivePhaseFieldDensityThreshold = 0.0f;
+    bool _isAdaptivePhaseFieldVariableDensityPressureProjectionEnabled = false;
+    float _adaptivePhaseFieldLiquidDensity = 1000.0f;
+    float _adaptivePhaseFieldGasDensity = 1.0f;
+    int _adaptivePhaseFieldPressureAirBandWidth = 3;
+    bool _isAdaptivePhaseFieldParticleAdaptivityEnabled = false;
+    int _adaptivePhaseFieldParticleMaxLevel = 2;
+    int _adaptivePhaseFieldParticleCoarsenDelay = 3;
+    int _adaptivePhaseFieldParticleMinParticlesPerCell = 2;
+    float _adaptivePhaseFieldParticleLevelBandwidth = 2.0f;
+    float _adaptivePhaseFieldParticleSplitJitter = 0.2f;
+    bool _isAdaptivePhaseFieldTwoPhaseParticlesEnabled = false;
+    int _adaptivePhaseFieldAirParticleBandWidth = 2;
+    int _adaptivePhaseFieldAirParticlesPerCell = 1;
     std::thread _updateLiquidLevelSetThread;
 
     // Fluid particle output
@@ -2316,6 +2410,7 @@ private:
     int _numSurfaceReconstructionPolygonizerSlices = 1;
     double _surfaceReconstructionSmoothingValue = 0.5;
     int _surfaceReconstructionSmoothingIterations = 2;
+    bool _isSurfaceVolumePreservingSmoothingEnabled = false;
     int _minimumSurfacePolyhedronTriangleCount = 0;
     double _markerParticleRadius = 0.0;
     double _markerParticleScale = 3.0;
@@ -2364,6 +2459,10 @@ private:
     bool _pressureSolverSuccess = true;
     int _pressureSolverIterations = 0;
     float _pressureSolverError = 0.0f;
+    int _pressureSolverRequestedMethod = (int)PressureSolverBackend::PCG;
+    int _pressureSolverUsedMethod = (int)PressureSolverBackend::PCG;
+    bool _pressureSolverFallbackUsed = false;
+    int _pressureSolverAMGLevelsBuilt = 1;
 
     // Pressure solve
     WeightGrid _weightGrid;
@@ -2375,6 +2474,7 @@ private:
     double _pressureSolveTolerance = 1e-9;
     double _pressureSolveAcceptableTolerance = 1.0;
     double _maxPressureSolveIterations = 900;
+    PressureSolverBackend _pressureSolverBackend = PressureSolverBackend::PCG;
     std::string _pressureSolverStatus;
     bool _viscositySolverSuccess = true;
     int _viscositySolverIterations = 0;

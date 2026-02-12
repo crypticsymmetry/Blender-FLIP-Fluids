@@ -561,7 +561,8 @@ def __load_save_state_marker_particle_data(fluidsim, save_state_directory, autos
     velocity_data_file = os.path.join(d, autosave_info['marker_particle_velocity_filedata'])
 
     velocity_transfer_method = data.domain_data.advanced.velocity_transfer_method.data
-    is_apic_enabled = velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_APIC'
+    is_apic_enabled = (velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_APIC' or
+                       velocity_transfer_method == 2 or velocity_transfer_method == '2')
     load_apic_data = False
     if is_apic_enabled:
         is_apic_data_available = ('marker_particle_affinex_filedata' in autosave_info and
@@ -644,6 +645,20 @@ def __load_save_state_marker_particle_data(fluidsim, save_state_directory, autos
             id_data_file = os.path.join(d, autosave_info['marker_particle_id_filedata'])
             load_id_data = True
 
+    load_phase_data = False
+    phase_path = 'marker_particle_phase_filedata'
+    is_phase_data_available = (phase_path in autosave_info) and autosave_info[phase_path]
+    if is_phase_data_available:
+        phase_data_file = os.path.join(d, autosave_info['marker_particle_phase_filedata'])
+        load_phase_data = True
+
+    load_mass_data = False
+    mass_path = 'marker_particle_mass_filedata'
+    is_mass_data_available = (mass_path in autosave_info) and autosave_info[mass_path]
+    if is_mass_data_available:
+        mass_data_file = os.path.join(d, autosave_info['marker_particle_mass_filedata'])
+        load_mass_data = True
+
     particles_per_read = 2**21
     bytes_per_vector = 12
     bytes_per_float = 4
@@ -706,6 +721,14 @@ def __load_save_state_marker_particle_data(fluidsim, save_state_directory, autos
         if load_id_data:
             id_data = __read_save_state_file_data(id_data_file, start_short_byte, end_short_byte)
             fluidsim.load_marker_particle_id_data(particle_count, id_data)
+
+        if load_phase_data:
+            phase_data = __read_save_state_file_data(phase_data_file, start_int_byte, end_int_byte)
+            fluidsim.load_marker_particle_phase_data(particle_count, phase_data)
+
+        if load_mass_data:
+            mass_data = __read_save_state_file_data(mass_data_file, start_float_byte, end_float_byte)
+            fluidsim.load_marker_particle_mass_data(particle_count, mass_data)
 
 
 def __load_save_state_diffuse_particle_data(fluidsim, save_state_directory, autosave_info):
@@ -952,6 +975,8 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
         fluidsim.diffuse_particle_wavecrest_emission_rate = wavecrest_rate
         fluidsim.diffuse_particle_turbulence_emission_rate = turbulence_rate
         fluidsim.diffuse_particle_dust_emission_rate = dust_rate
+        fluidsim.diffuse_max_emission_particles_per_emitter = \
+            __get_parameter_data(whitewater.max_emission_particles_per_emitter, frameno)
 
         spray_emission_speed = __get_parameter_data(whitewater.spray_emission_speed, frameno)
         fluidsim.diffuse_spray_emission_speed = spray_emission_speed
@@ -1297,12 +1322,23 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
         __get_parameter_data(advanced.pressure_solver_max_iterations, frameno)
     fluidsim.viscosity_solver_max_iterations = \
         __get_parameter_data(advanced.viscosity_solver_max_iterations, frameno)
+    pressure_solver_method = __get_parameter_data(advanced.pressure_solver_method, frameno)
+    if pressure_solver_method == 'PRESSURE_SOLVER_METHOD_PCG' or pressure_solver_method == 0 or pressure_solver_method == '0':
+        fluidsim.pressure_solver_method = 0
+    elif pressure_solver_method == 'PRESSURE_SOLVER_METHOD_FPCG' or pressure_solver_method == 1 or pressure_solver_method == '1':
+        fluidsim.pressure_solver_method = 1
+    elif pressure_solver_method == 'PRESSURE_SOLVER_METHOD_AMG_FPCG' or pressure_solver_method == 2 or pressure_solver_method == '2':
+        fluidsim.pressure_solver_method = 2
+    else:
+        fluidsim.pressure_solver_method = 0
 
     velocity_transfer_method = __get_parameter_data(advanced.velocity_transfer_method, frameno)
-    if velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_FLIP':
+    if velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_FLIP' or velocity_transfer_method == 1 or velocity_transfer_method == '1':
         fluidsim.set_velocity_transfer_method_FLIP()
-    elif velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_APIC':
+    elif velocity_transfer_method == 'VELOCITY_TRANSFER_METHOD_APIC' or velocity_transfer_method == 2 or velocity_transfer_method == '2':
         fluidsim.set_velocity_transfer_method_APIC()
+    else:
+        fluidsim.set_velocity_transfer_method_FLIP()
 
     fluidsim.PICFLIP_ratio = __get_parameter_data(advanced.PICFLIP_ratio, frameno)
     fluidsim.PICAPIC_ratio = __get_parameter_data(advanced.PICAPIC_ratio, frameno)
@@ -1315,6 +1351,19 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
     fluidsim.adaptive_phase_field_smoothing_band_layers = __get_parameter_data(advanced.adaptive_phase_field_smoothing_band_layers, frameno)
     fluidsim.adaptive_phase_field_velocity_refinement_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_refinement_scale, frameno)
     fluidsim.adaptive_phase_field_velocity_band_expansion_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_band_expansion_scale, frameno)
+    fluidsim.adaptive_phase_field_alpha_phi = __get_parameter_data(advanced.adaptive_phase_field_alpha_phi, frameno)
+    fluidsim.adaptive_phase_field_density_threshold = __get_parameter_data(advanced.adaptive_phase_field_density_threshold, frameno)
+    fluidsim.adaptive_phase_field_variable_density_pressure_projection = __get_parameter_data(advanced.adaptive_phase_field_variable_density_pressure_projection, frameno)
+    fluidsim.adaptive_phase_field_liquid_density = __get_parameter_data(advanced.adaptive_phase_field_liquid_density, frameno)
+    fluidsim.adaptive_phase_field_gas_density = __get_parameter_data(advanced.adaptive_phase_field_gas_density, frameno)
+    fluidsim.adaptive_phase_field_pressure_air_band_width = __get_parameter_data(advanced.adaptive_phase_field_pressure_air_band_width, frameno)
+    fluidsim.adaptive_phase_field_particle_adaptivity = __get_parameter_data(advanced.adaptive_phase_field_particle_adaptivity, frameno)
+    fluidsim.adaptive_phase_field_particle_max_level = __get_parameter_data(advanced.adaptive_phase_field_particle_max_level, frameno)
+    fluidsim.adaptive_phase_field_particle_coarsen_delay = __get_parameter_data(advanced.adaptive_phase_field_particle_coarsen_delay, frameno)
+    fluidsim.adaptive_phase_field_particle_min_particles_per_cell = __get_parameter_data(advanced.adaptive_phase_field_particle_min_particles_per_cell, frameno)
+    fluidsim.adaptive_phase_field_two_phase_particles = __get_parameter_data(advanced.adaptive_phase_field_two_phase_particles, frameno)
+    fluidsim.adaptive_phase_field_air_particle_band_width = __get_parameter_data(advanced.adaptive_phase_field_air_particle_band_width, frameno)
+    fluidsim.adaptive_phase_field_air_particles_per_cell = __get_parameter_data(advanced.adaptive_phase_field_air_particles_per_cell, frameno)
 
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     fluidsim.CFL_condition_number = CFL_number
@@ -1331,6 +1380,8 @@ def __initialize_fluid_simulation_settings(fluidsim, data):
 
     fluidsim.enable_asynchronous_meshing = \
         __get_parameter_data(advanced.enable_asynchronous_meshing, frameno)
+    fluidsim.surface_volume_preserving_smoothing = \
+        __get_parameter_data(advanced.enable_volume_preserving_surface_smoothing, frameno)
 
     fluidsim.enable_fracture_optimization = \
         __get_parameter_data(advanced.enable_fracture_optimization, frameno)
@@ -1944,6 +1995,8 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
         __set_property(fluidsim, 'diffuse_particle_wavecrest_emission_rate', wavecrest_rate)
         __set_property(fluidsim, 'diffuse_particle_turbulence_emission_rate', turbulence_rate)
         __set_property(fluidsim, 'diffuse_particle_dust_emission_rate', dust_rate)
+        max_per_emitter = __get_parameter_data(whitewater.max_emission_particles_per_emitter, frameno)
+        __set_property(fluidsim, 'diffuse_max_emission_particles_per_emitter', max_per_emitter)
 
         spray_emission_speed = __get_parameter_data(whitewater.spray_emission_speed, frameno)
         __set_property(fluidsim, 'diffuse_spray_emission_speed', spray_emission_speed)
@@ -2235,6 +2288,16 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
     viscosity_solver_iterations = __get_parameter_data(advanced.viscosity_solver_max_iterations, frameno)
     __set_property(fluidsim, 'viscosity_solver_max_iterations', viscosity_solver_iterations)
 
+    pressure_solver_method = __get_parameter_data(advanced.pressure_solver_method, frameno)
+    if pressure_solver_method == 'PRESSURE_SOLVER_METHOD_PCG' or pressure_solver_method == 0 or pressure_solver_method == '0':
+        __set_property(fluidsim, 'pressure_solver_method', 0)
+    elif pressure_solver_method == 'PRESSURE_SOLVER_METHOD_FPCG' or pressure_solver_method == 1 or pressure_solver_method == '1':
+        __set_property(fluidsim, 'pressure_solver_method', 1)
+    elif pressure_solver_method == 'PRESSURE_SOLVER_METHOD_AMG_FPCG' or pressure_solver_method == 2 or pressure_solver_method == '2':
+        __set_property(fluidsim, 'pressure_solver_method', 2)
+    else:
+        __set_property(fluidsim, 'pressure_solver_method', 0)
+
     PICFLIP_ratio = __get_parameter_data(advanced.PICFLIP_ratio, frameno)
     __set_property(fluidsim, 'PICFLIP_ratio', PICFLIP_ratio)
 
@@ -2268,6 +2331,45 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
     adaptive_phase_field_velocity_band_expansion_scale = __get_parameter_data(advanced.adaptive_phase_field_velocity_band_expansion_scale, frameno)
     __set_property(fluidsim, 'adaptive_phase_field_velocity_band_expansion_scale', adaptive_phase_field_velocity_band_expansion_scale)
 
+    adaptive_phase_field_alpha_phi = __get_parameter_data(advanced.adaptive_phase_field_alpha_phi, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_alpha_phi', adaptive_phase_field_alpha_phi)
+
+    adaptive_phase_field_density_threshold = __get_parameter_data(advanced.adaptive_phase_field_density_threshold, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_density_threshold', adaptive_phase_field_density_threshold)
+
+    adaptive_phase_field_variable_density_pressure_projection = __get_parameter_data(advanced.adaptive_phase_field_variable_density_pressure_projection, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_variable_density_pressure_projection', adaptive_phase_field_variable_density_pressure_projection)
+
+    adaptive_phase_field_liquid_density = __get_parameter_data(advanced.adaptive_phase_field_liquid_density, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_liquid_density', adaptive_phase_field_liquid_density)
+
+    adaptive_phase_field_gas_density = __get_parameter_data(advanced.adaptive_phase_field_gas_density, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_gas_density', adaptive_phase_field_gas_density)
+
+    adaptive_phase_field_pressure_air_band_width = __get_parameter_data(advanced.adaptive_phase_field_pressure_air_band_width, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_pressure_air_band_width', adaptive_phase_field_pressure_air_band_width)
+
+    adaptive_phase_field_particle_adaptivity = __get_parameter_data(advanced.adaptive_phase_field_particle_adaptivity, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_particle_adaptivity', adaptive_phase_field_particle_adaptivity)
+
+    adaptive_phase_field_particle_max_level = __get_parameter_data(advanced.adaptive_phase_field_particle_max_level, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_particle_max_level', adaptive_phase_field_particle_max_level)
+
+    adaptive_phase_field_particle_coarsen_delay = __get_parameter_data(advanced.adaptive_phase_field_particle_coarsen_delay, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_particle_coarsen_delay', adaptive_phase_field_particle_coarsen_delay)
+
+    adaptive_phase_field_particle_min_particles_per_cell = __get_parameter_data(advanced.adaptive_phase_field_particle_min_particles_per_cell, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_particle_min_particles_per_cell', adaptive_phase_field_particle_min_particles_per_cell)
+
+    adaptive_phase_field_two_phase_particles = __get_parameter_data(advanced.adaptive_phase_field_two_phase_particles, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_two_phase_particles', adaptive_phase_field_two_phase_particles)
+
+    adaptive_phase_field_air_particle_band_width = __get_parameter_data(advanced.adaptive_phase_field_air_particle_band_width, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_air_particle_band_width', adaptive_phase_field_air_particle_band_width)
+
+    adaptive_phase_field_air_particles_per_cell = __get_parameter_data(advanced.adaptive_phase_field_air_particles_per_cell, frameno)
+    __set_property(fluidsim, 'adaptive_phase_field_air_particles_per_cell', adaptive_phase_field_air_particles_per_cell)
+
     CFL_number = __get_parameter_data(advanced.CFL_condition_number, frameno)
     __set_property(fluidsim, 'CFL_condition_number', CFL_number)
 
@@ -2283,6 +2385,8 @@ def __update_animatable_domain_properties(fluidsim, data, frameno):
 
     enable_async_meshing = __get_parameter_data(advanced.enable_asynchronous_meshing, frameno)
     __set_property(fluidsim, 'enable_asynchronous_meshing', enable_async_meshing)
+    enable_volume_preserving_smoothing = __get_parameter_data(advanced.enable_volume_preserving_surface_smoothing, frameno)
+    __set_property(fluidsim, 'surface_volume_preserving_smoothing', enable_volume_preserving_smoothing)
 
     enable_fracture_optimization = __get_parameter_data(advanced.enable_fracture_optimization, frameno)
     __set_property(fluidsim, 'enable_fracture_optimization', enable_fracture_optimization)
@@ -2729,6 +2833,10 @@ def __get_frame_stats_dict(cstats):
     stats["pressure_solver_error"] = cstats.pressure_solver_error
     stats["pressure_solver_iterations"] = cstats.pressure_solver_iterations
     stats["pressure_solver_max_iterations"] = cstats.pressure_solver_max_iterations
+    stats["pressure_solver_requested_method"] = cstats.pressure_solver_requested_method
+    stats["pressure_solver_used_method"] = cstats.pressure_solver_used_method
+    stats["pressure_solver_fallback_used"] = cstats.pressure_solver_fallback_used
+    stats["pressure_solver_amg_levels_built"] = cstats.pressure_solver_amg_levels_built
     stats["viscosity_solver_enabled"] = cstats.viscosity_solver_enabled
     stats["viscosity_solver_success"] = cstats.viscosity_solver_success
     stats["viscosity_solver_error"] = cstats.viscosity_solver_error
@@ -2816,6 +2924,8 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
     uid_data_path = os.path.join(autosave_dir, "marker_particle_uid.data")
     viscosity_data_path = os.path.join(autosave_dir, "marker_particle_viscosity.data")
     id_data_path = os.path.join(autosave_dir, "marker_particle_id.data")
+    phase_data_path = os.path.join(autosave_dir, "marker_particle_phase.data")
+    mass_data_path = os.path.join(autosave_dir, "marker_particle_mass.data")
 
     diffuse_position_data_path = os.path.join(autosave_dir, "diffuse_particle_position.data")
     diffuse_velocity_data_path = os.path.join(autosave_dir, "diffuse_particle_velocity.data")
@@ -2855,6 +2965,10 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
             ]
     autosave_id_filepaths = [
             id_data_path
+            ]
+    autosave_two_phase_filepaths = [
+            phase_data_path,
+            mass_data_path
             ]
 
     autosave_diffuse_filepaths = [
@@ -2915,6 +3029,12 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
                 data = fluidsim.get_marker_particle_id_data_range(start_idx, end_idx)
                 __write_save_state_file_data(id_data_path + temp_extension, data, is_appending_data=is_appending)
 
+            if fluidsim.adaptive_phase_field_two_phase_particles:
+                data = fluidsim.get_marker_particle_phase_data_range(start_idx, end_idx)
+                __write_save_state_file_data(phase_data_path + temp_extension, data, is_appending_data=is_appending)
+                data = fluidsim.get_marker_particle_mass_data_range(start_idx, end_idx)
+                __write_save_state_file_data(mass_data_path + temp_extension, data, is_appending_data=is_appending)
+
         if fluidsim.get_num_diffuse_particles() > 0:
             num_particles = fluidsim.get_num_diffuse_particles()
             diffuse_particles_per_write = 2**21
@@ -2966,6 +3086,8 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
         autosave_info['marker_particle_uid_filedata'] = ""
         autosave_info['marker_particle_viscosity_filedata'] = ""
         autosave_info['marker_particle_id_filedata'] = ""
+        autosave_info['marker_particle_phase_filedata'] = ""
+        autosave_info['marker_particle_mass_filedata'] = ""
 
         autosave_info['diffuse_particle_position_filedata'] = ""
         autosave_info['diffuse_particle_velocity_filedata'] = ""
@@ -2999,6 +3121,10 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
         if fluidsim.enable_fluid_particle_output:
             autosave_info['marker_particle_id_filedata'] = "marker_particle_id.data"
 
+        if fluidsim.adaptive_phase_field_two_phase_particles:
+            autosave_info['marker_particle_phase_filedata'] = "marker_particle_phase.data"
+            autosave_info['marker_particle_mass_filedata'] = "marker_particle_mass.data"
+
         if fluidsim.get_num_diffuse_particles() > 0:
             autosave_info['diffuse_particle_position_filedata'] = "diffuse_particle_position.data"
             autosave_info['diffuse_particle_velocity_filedata'] = "diffuse_particle_velocity.data"
@@ -3027,6 +3153,7 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
                           autosave_uid_filepaths + 
                           autosave_viscosity_filepaths + 
                           autosave_id_filepaths + 
+                          autosave_two_phase_filepaths +
                           autosave_diffuse_filepaths
                           )
         for filepath in data_filepaths:
@@ -3064,6 +3191,9 @@ def __write_autosave_data(domain_data, cache_directory, fluidsim, frameno):
                 os.rename(filepath + temp_extension, filepath)
         if fluidsim.enable_fluid_particle_output:
             for filepath in autosave_id_filepaths:
+                os.rename(filepath + temp_extension, filepath)
+        if fluidsim.adaptive_phase_field_two_phase_particles:
+            for filepath in autosave_two_phase_filepaths:
                 os.rename(filepath + temp_extension, filepath)
         if fluidsim.get_num_diffuse_particles() > 0:
             for filepath in autosave_diffuse_filepaths:

@@ -71,6 +71,7 @@ struct VelocityAdvectorParameters {
     MACVelocityField *vfield;
     ValidVelocityComponentGrid *validVelocities;
     double particleRadius = 1.0;
+    bool useParticleMass = false;
     VelocityAdvectorTransferMethod velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;
 };
 
@@ -112,10 +113,11 @@ private:
         float y = 0.0f;
         float z = 0.0f;
         float v = 0.0f;
+        float m = 1.0f;
 
         PointData() {}
-        PointData(float px, float py, float pz, float vel)
-                    : x(px), y(py), z(pz), v(vel) {}
+        PointData(float px, float py, float pz, float vel, float mass)
+                    : x(px), y(py), z(pz), v(vel), m(mass) {}
     };
 
     struct AffineData {
@@ -174,6 +176,8 @@ private:
     ValidVelocityComponentGrid *_validVelocities;
     std::vector<vmath::vec3> _points;
     std::vector<vmath::vec3> _velocities;
+    std::vector<float> _particleMasses;
+    bool _isMassWeightedTransferEnabled = false;
     VelocityAdvectorTransferMethod _velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;
 
     // APIC Data

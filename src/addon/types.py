@@ -186,8 +186,14 @@ obstacle_meshing_modes = (
     )
 
 velocity_transfer_methods = (
-    ('VELOCITY_TRANSFER_METHOD_FLIP', "FLIP", "Choose FLIP for high energy, noisy, and chaotic simulations. Generally better for large scale simulations where noisy splashes are desirable."),
-    ('VELOCITY_TRANSFER_METHOD_APIC', "APIC", "Choose APIC for high vorticity, swirly, and stable simulations. Generally better for small scale simulations where reduced surface noise is desirable or for viscous simulations.")
+    ('VELOCITY_TRANSFER_METHOD_FLIP', "FLIP", "Choose FLIP for high energy, noisy, and chaotic simulations. Generally better for large scale simulations where noisy splashes are desirable.", 'NONE', 1),
+    ('VELOCITY_TRANSFER_METHOD_APIC', "APIC", "Choose APIC for high vorticity, swirly, and stable simulations. Generally better for small scale simulations where reduced surface noise is desirable or for viscous simulations.", 'NONE', 2)
+    )
+
+pressure_solver_methods = (
+    ('PRESSURE_SOLVER_METHOD_PCG', "PCG", "Classic pressure solve backend. Most robust and acts as fallback.", 'NONE', 0),
+    ('PRESSURE_SOLVER_METHOD_FPCG', "FPCG", "Preconditioned conjugate gradient with a diagonal preconditioner.", 'NONE', 1),
+    ('PRESSURE_SOLVER_METHOD_AMG_FPCG', "AMG/FPCG", "FPCG with an algebraic multigrid V-cycle preconditioner.", 'NONE', 2)
     )
 
 surface_tension_solver_methods = (

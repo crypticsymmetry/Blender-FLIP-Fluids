@@ -162,6 +162,15 @@ class DomainWhitewaterProperties(bpy.types.PropertyGroup):
             step=30,
             precision=0,
             ); exec(conv("dust_emission_rate"))
+    max_emission_particles_per_emitter = IntProperty(
+            name="Max Emission Per Emitter (Substep)",
+            description="Cap the number of whitewater particles emitted by a single emitter in one simulation substep."
+                " Use this to reduce bursty emission spikes and stabilize whitewater generation."
+                " Set to 0 to disable the cap",
+            min=0, max=10000,
+            soft_max=256,
+            default=0,
+            ); exec(conv("max_emission_particles_per_emitter"))
     spray_emission_speed = FloatProperty(
             name="Spray Emission Speed", 
             description="Speed scaling factor for spray particle emission. Increasing"
@@ -532,6 +541,7 @@ class DomainWhitewaterProperties(bpy.types.PropertyGroup):
         add(path + ".wavecrest_emission_rate",                  "Wavecrest Emission Rate",        group_id=0)
         add(path + ".turbulence_emission_rate",                 "Turbulence Emission Rate",       group_id=0)
         add(path + ".dust_emission_rate",                       "Dust Emission Rate",             group_id=0)
+        add(path + ".max_emission_particles_per_emitter",       "Max Emission Per Emitter",       group_id=0)
         add(path + ".spray_emission_speed",                     "Spray Emission Speed",           group_id=0)
         add(path + ".min_max_whitewater_energy_speed",          "Min-Max Energy Speed",           group_id=0)
         add(path + ".min_max_whitewater_wavecrest_curvature",   "Min-Max Curvature",              group_id=0)

@@ -47,7 +47,11 @@ void GridIndexKeyMap::insert(GridIndex g, int key) {
 }
 
 void GridIndexKeyMap::insert(int i, int j, int k, int key) {
-    FLUIDSIM_ASSERT(Grid3d::isGridIndexInRange(i, j, k, _isize, _jsize, _ksize));
+    bool inRange = Grid3d::isGridIndexInRange(i, j, k, _isize, _jsize, _ksize);
+    FLUIDSIM_ASSERT(inRange);
+    if (!inRange || _indices.size() == 0) {
+        return;
+    }
 
     int flatidx = _getFlatIndex(i, j, k);
     _indices[flatidx] = key;
@@ -58,7 +62,11 @@ int GridIndexKeyMap::find(GridIndex g) {
 }
 
 int GridIndexKeyMap::find(int i, int j, int k) {
-    FLUIDSIM_ASSERT(Grid3d::isGridIndexInRange(i, j, k, _isize, _jsize, _ksize));
+    bool inRange = Grid3d::isGridIndexInRange(i, j, k, _isize, _jsize, _ksize);
+    FLUIDSIM_ASSERT(inRange);
+    if (!inRange) {
+        return _notFoundValue;
+    }
 
     if (_indices.size() == 0) {
         return _notFoundValue;

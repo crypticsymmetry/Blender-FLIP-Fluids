@@ -320,6 +320,20 @@ class FluidSimulation(object):
         pb.execute_lib_func(libfunc, [self()])
 
     @property
+    def pressure_solver_method(self):
+        libfunc = lib.FluidSimulation_get_pressure_solver_method
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @pressure_solver_method.setter
+    @decorators.check_ge_zero
+    @decorators.check_le(2)
+    def pressure_solver_method(self, method):
+        libfunc = lib.FluidSimulation_set_pressure_solver_method
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), int(method)])
+
+    @property
     def pressure_solver_max_iterations(self):
         libfunc = lib.FluidSimulation_get_pressure_solver_max_iterations
         pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
@@ -480,6 +494,21 @@ class FluidSimulation(object):
         libfunc = lib.FluidSimulation_set_surface_smoothing_iterations
         pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
         pb.execute_lib_func(libfunc, [self(), int(n)])
+
+    @property
+    def surface_volume_preserving_smoothing(self):
+        libfunc = lib.FluidSimulation_is_surface_volume_preserving_smoothing_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @surface_volume_preserving_smoothing.setter
+    def surface_volume_preserving_smoothing(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_surface_volume_preserving_smoothing
+        else:
+            libfunc = lib.FluidSimulation_disable_surface_volume_preserving_smoothing
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
 
     def set_meshing_volume(self, mesh_object):
         libfunc = lib.FluidSimulation_set_meshing_volume
@@ -1651,6 +1680,19 @@ class FluidSimulation(object):
         pb.execute_lib_func(libfunc, [self(), rate])
 
     @property
+    def diffuse_max_emission_particles_per_emitter(self):
+        libfunc = lib.FluidSimulation_get_diffuse_max_emission_particles_per_emitter
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @diffuse_max_emission_particles_per_emitter.setter
+    @decorators.check_ge_zero
+    def diffuse_max_emission_particles_per_emitter(self, value):
+        libfunc = lib.FluidSimulation_set_diffuse_max_emission_particles_per_emitter
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), int(value)])
+
+    @property
     def diffuse_foam_advection_strength(self):
         libfunc = lib.FluidSimulation_get_diffuse_foam_advection_strength
         pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_double)
@@ -2620,6 +2662,181 @@ class FluidSimulation(object):
         pb.execute_lib_func(libfunc, [self(), s])
 
     @property
+    def adaptive_phase_field_alpha_phi(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_alpha_phi
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_alpha_phi.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_alpha_phi(self, a):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_alpha_phi
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), a])
+
+    @property
+    def adaptive_phase_field_density_threshold(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_density_threshold
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_density_threshold.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_density_threshold(self, t):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_density_threshold
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), t])
+
+    @property
+    def adaptive_phase_field_variable_density_pressure_projection(self):
+        libfunc = lib.FluidSimulation_is_adaptive_phase_field_variable_density_pressure_projection_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @adaptive_phase_field_variable_density_pressure_projection.setter
+    def adaptive_phase_field_variable_density_pressure_projection(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_adaptive_phase_field_variable_density_pressure_projection
+        else:
+            libfunc = lib.FluidSimulation_disable_adaptive_phase_field_variable_density_pressure_projection
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def adaptive_phase_field_liquid_density(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_liquid_density
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_liquid_density.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_liquid_density(self, d):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_liquid_density
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), d])
+
+    @property
+    def adaptive_phase_field_gas_density(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_gas_density
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_float)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_gas_density.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_gas_density(self, d):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_gas_density
+        pb.init_lib_func(libfunc, [c_void_p, c_float, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), d])
+
+    @property
+    def adaptive_phase_field_pressure_air_band_width(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_pressure_air_band_width
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_pressure_air_band_width.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_pressure_air_band_width(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_pressure_air_band_width
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_particle_adaptivity(self):
+        libfunc = lib.FluidSimulation_is_adaptive_phase_field_particle_adaptivity_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @adaptive_phase_field_particle_adaptivity.setter
+    def adaptive_phase_field_particle_adaptivity(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_adaptive_phase_field_particle_adaptivity
+        else:
+            libfunc = lib.FluidSimulation_disable_adaptive_phase_field_particle_adaptivity
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def adaptive_phase_field_particle_max_level(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_particle_max_level
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_particle_max_level.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_particle_max_level(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_particle_max_level
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_particle_coarsen_delay(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_particle_coarsen_delay
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_particle_coarsen_delay.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_particle_coarsen_delay(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_particle_coarsen_delay
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_particle_min_particles_per_cell(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_particle_min_particles_per_cell
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_particle_min_particles_per_cell.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_particle_min_particles_per_cell(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_particle_min_particles_per_cell
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_two_phase_particles(self):
+        libfunc = lib.FluidSimulation_is_adaptive_phase_field_two_phase_particles_enabled
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return bool(pb.execute_lib_func(libfunc, [self()]))
+
+    @adaptive_phase_field_two_phase_particles.setter
+    def adaptive_phase_field_two_phase_particles(self, boolval):
+        if boolval:
+            libfunc = lib.FluidSimulation_enable_adaptive_phase_field_two_phase_particles
+        else:
+            libfunc = lib.FluidSimulation_disable_adaptive_phase_field_two_phase_particles
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self()])
+
+    @property
+    def adaptive_phase_field_air_particle_band_width(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_air_particle_band_width
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_air_particle_band_width.setter
+    @decorators.check_ge_zero
+    def adaptive_phase_field_air_particle_band_width(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_air_particle_band_width
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
+    def adaptive_phase_field_air_particles_per_cell(self):
+        libfunc = lib.FluidSimulation_get_adaptive_phase_field_air_particles_per_cell
+        pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
+        return pb.execute_lib_func(libfunc, [self()])
+
+    @adaptive_phase_field_air_particles_per_cell.setter
+    @decorators.check_gt_zero
+    def adaptive_phase_field_air_particles_per_cell(self, n):
+        libfunc = lib.FluidSimulation_set_adaptive_phase_field_air_particles_per_cell
+        pb.init_lib_func(libfunc, [c_void_p, c_int, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), n])
+
+    @property
     def enable_fracture_optimization(self):
         libfunc = lib.FluidSimulation_is_fracture_optimization_enabled
         pb.init_lib_func(libfunc, [c_void_p, c_void_p], c_int)
@@ -3113,6 +3330,16 @@ class FluidSimulation(object):
         return self._get_output_data_range(lib.FluidSimulation_get_marker_particle_id_data_range,
                                            start_idx, end_idx, size_of_short)
 
+    def get_marker_particle_phase_data_range(self, start_idx, end_idx):
+        size_of_int = 4
+        return self._get_output_data_range(lib.FluidSimulation_get_marker_particle_phase_data_range,
+                                           start_idx, end_idx, size_of_int)
+
+    def get_marker_particle_mass_data_range(self, start_idx, end_idx):
+        size_of_float = 4
+        return self._get_output_data_range(lib.FluidSimulation_get_marker_particle_mass_data_range,
+                                           start_idx, end_idx, size_of_float)
+
     def get_diffuse_particle_position_data_range(self, start_idx, end_idx):
         size_of_vector = 12
         return self._get_output_data_range(lib.FluidSimulation_get_diffuse_particle_position_data_range,
@@ -3270,6 +3497,28 @@ class FluidSimulation(object):
         pb.init_lib_func(libfunc, [c_void_p, FluidSimulationMarkerParticleIDData_t, c_void_p], None)
         pb.execute_lib_func(libfunc, [self(), pdata])
 
+    def load_marker_particle_phase_data(self, num_particles, phase_data):
+        c_phase_data = (c_char * len(phase_data)).from_buffer_copy(phase_data)
+
+        pdata = FluidSimulationMarkerParticlePhaseData_t()
+        pdata.size = c_int(num_particles)
+        pdata.phase = ctypes.cast(c_phase_data, c_char_p)
+
+        libfunc = lib.FluidSimulation_load_marker_particle_phase_data
+        pb.init_lib_func(libfunc, [c_void_p, FluidSimulationMarkerParticlePhaseData_t, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), pdata])
+
+    def load_marker_particle_mass_data(self, num_particles, mass_data):
+        c_mass_data = (c_char * len(mass_data)).from_buffer_copy(mass_data)
+
+        pdata = FluidSimulationMarkerParticleMassData_t()
+        pdata.size = c_int(num_particles)
+        pdata.mass = ctypes.cast(c_mass_data, c_char_p)
+
+        libfunc = lib.FluidSimulation_load_marker_particle_mass_data
+        pb.init_lib_func(libfunc, [c_void_p, FluidSimulationMarkerParticleMassData_t, c_void_p], None)
+        pb.execute_lib_func(libfunc, [self(), pdata])
+
     def load_diffuse_particle_data(self, num_particles, position_data, velocity_data,
                                          lifetime_data, type_data, id_data):
         c_position_data = (c_char * len(position_data)).from_buffer_copy(position_data)
@@ -3330,6 +3579,10 @@ class FluidSimulationFrameStats_t(ctypes.Structure):
                 ("pressure_solver_error", c_double),
                 ("pressure_solver_iterations", c_int),
                 ("pressure_solver_max_iterations", c_int),
+                ("pressure_solver_requested_method", c_int),
+                ("pressure_solver_used_method", c_int),
+                ("pressure_solver_fallback_used", c_int),
+                ("pressure_solver_amg_levels_built", c_int),
                 ("viscosity_solver_enabled", c_int),
                 ("viscosity_solver_success", c_int),
                 ("viscosity_solver_error", c_double),
@@ -3422,6 +3675,14 @@ class FluidSimulationMarkerParticleViscosityData_t(ctypes.Structure):
 class FluidSimulationMarkerParticleIDData_t(ctypes.Structure):
     _fields_ = [("size", c_int),
                 ("id", c_char_p)]
+
+class FluidSimulationMarkerParticlePhaseData_t(ctypes.Structure):
+    _fields_ = [("size", c_int),
+                ("phase", c_char_p)]
+
+class FluidSimulationMarkerParticleMassData_t(ctypes.Structure):
+    _fields_ = [("size", c_int),
+                ("mass", c_char_p)]
 
 class FluidSimulationDiffuseParticleData_t(ctypes.Structure):
     _fields_ = [("size", c_int),

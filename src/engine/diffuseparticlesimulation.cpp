@@ -71,6 +71,10 @@ void DiffuseParticleSimulation::update(DiffuseParticleSimulationParameters param
     _forceFieldGrid = params.forceFieldGrid;
     _isForceFieldGridSet = params.isForceFieldGridSet;
 
+    _lastFrameEmitterCount = 0;
+    _lastFrameDustEmitterCount = 0;
+    _lastFrameEmittedParticleCount = 0;
+    _lastFrameEmissionClampedParticleCount = 0;
 
     bool isParticlesEnabled = _isFoamEnabled || _isBubblesEnabled || _isSprayEnabled || _isDustEnabled;
     bool emitParticles = _isDiffuseParticleEmissionEnabled && 
@@ -84,6 +88,8 @@ void DiffuseParticleSimulation::update(DiffuseParticleSimulationParameters param
         std::vector<DiffuseParticleEmitter> normalEmitters;
         std::vector<DiffuseParticleEmitter> dustEmitters;
         _getDiffuseParticleEmitters(normalEmitters, dustEmitters);
+        _lastFrameEmitterCount = (int)normalEmitters.size();
+        _lastFrameDustEmitterCount = (int)dustEmitters.size();
         _emitNormalDiffuseParticles(normalEmitters, params.deltaTime);
         _emitDustDiffuseParticles(dustEmitters, params.deltaTime);
     }
@@ -397,6 +403,31 @@ double DiffuseParticleSimulation::getDiffuseParticleDustEmissionRate() {
 void DiffuseParticleSimulation::setDiffuseParticleDustEmissionRate(double r) {
     FLUIDSIM_ASSERT(r >= 0);
     _dustEmissionRate = r;
+}
+
+int DiffuseParticleSimulation::getMaxEmissionParticlesPerEmitter() {
+    return _maxEmissionParticlesPerEmitter;
+}
+
+void DiffuseParticleSimulation::setMaxEmissionParticlesPerEmitter(int n) {
+    FLUIDSIM_ASSERT(n >= 0);
+    _maxEmissionParticlesPerEmitter = n;
+}
+
+int DiffuseParticleSimulation::getLastFrameEmitterCount() {
+    return _lastFrameEmitterCount;
+}
+
+int DiffuseParticleSimulation::getLastFrameDustEmitterCount() {
+    return _lastFrameDustEmitterCount;
+}
+
+int DiffuseParticleSimulation::getLastFrameEmittedParticleCount() {
+    return _lastFrameEmittedParticleCount;
+}
+
+int DiffuseParticleSimulation::getLastFrameEmissionClampedParticleCount() {
+    return _lastFrameEmissionClampedParticleCount;
 }
 
 double DiffuseParticleSimulation::getFoamAdvectionStrength() {
@@ -1910,6 +1941,11 @@ void DiffuseParticleSimulation::_emitDiffuseParticles(DiffuseParticleEmitter &em
                                                       std::vector<DiffuseParticle> &particles) {
 
     int n = _getNumberOfEmissionParticles(emitter, dt);
+    if (_maxEmissionParticlesPerEmitter > 0 && n > _maxEmissionParticlesPerEmitter) {
+        _lastFrameEmissionClampedParticleCount += n - _maxEmissionParticlesPerEmitter;
+        n = _maxEmissionParticlesPerEmitter;
+    }
+
     if (_diffuseParticles.size() + n >= _maxNumDiffuseParticles) {
         n = _maxNumDiffuseParticles - _diffuseParticles.size();
     }
@@ -1945,6 +1981,7 @@ void DiffuseParticleSimulation::_emitDiffuseParticles(DiffuseParticleEmitter &em
     vmath::vec3 p;
     vmath::vec3 v(0.0, 0.0, 0.0); // velocities will computed in bulk later
     GridIndex g;
+    size_t previousCount = particles.size();
     for (int i = 0; i < n; i++) {
         float Xr = (float)(rand()) / (float)RAND_MAX;
         float Xt = (float)(rand()) / (float)RAND_MAX;
@@ -1977,9 +2014,11 @@ void DiffuseParticleSimulation::_emitDiffuseParticles(DiffuseParticleEmitter &em
         particles.push_back(dp);
 
         if (particles.size() >= _maxNumDiffuseParticles) {
-            return;
+            break;
         }
     }
+
+    _lastFrameEmittedParticleCount += (int)(particles.size() - previousCount);
 }
 
 int DiffuseParticleSimulation::

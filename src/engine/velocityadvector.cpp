@@ -48,6 +48,7 @@ void VelocityAdvector::_initializeParameters(VelocityAdvectorParameters params) 
     _validVelocities = params.validVelocities;
     _particleRadius = params.particleRadius;
     _velocityTransferMethod = params.velocityTransferMethod;
+    _isMassWeightedTransferEnabled = false;
     
     _dx = _vfield->getGridCellSize();
     _chunkdx = _dx * _chunkWidth;
@@ -58,6 +59,19 @@ void VelocityAdvector::_initializeParameters(VelocityAdvectorParameters params) 
 
     _points = *positions;
     _velocities = *velocities;
+
+    _particleMasses = std::vector<float>(_points.size(), 1.0f);
+    if (params.useParticleMass) {
+        ParticleSystemAttribute massAttribute = _particles->getAttribute("MASS");
+        if (massAttribute.type == AttributeDataType::FLOAT) {
+            std::vector<float> *masses;
+            _particles->getAttributeValues("MASS", masses);
+            if (masses->size() == _points.size()) {
+                _particleMasses = *masses;
+                _isMassWeightedTransferEnabled = true;
+            }
+        }
+    }
 
     if (_isAPIC()) {
         std::vector<vmath::vec3> *affineX, *affineY, *affineZ;
@@ -392,7 +406,8 @@ void VelocityAdvector::_sortParticlesIntoBlocks(ParticleGridCountData &countdata
 
                 vmath::vec3 p = _points[i + indexOffset] - offset;
                 float v = _velocities[i + indexOffset][diridx];
-                PointData pdata(p.x, p.y, p.z, v);
+                float m = _particleMasses[i + indexOffset];
+                PointData pdata(p.x, p.y, p.z, v, m);
 
                 if (countData->simpleGridIndices[i] >= 0) {
                     int blockid = countData->simpleGridIndices[i];
@@ -428,7 +443,8 @@ void VelocityAdvector::_sortParticlesIntoBlocks(ParticleGridCountData &countdata
 
                 vmath::vec3 p = _points[i + indexOffset] - offset;
                 float v = _velocities[i + indexOffset][diridx];
-                PointData pdata(p.x, p.y, p.z, v);
+                float m = _particleMasses[i + indexOffset];
+                PointData pdata(p.x, p.y, p.z, v, m);
                 AffineData adata;
 
                 if (dir == Direction::U) {
@@ -492,6 +508,7 @@ void VelocityAdvector::_advectionFLIPProducerThread(BoundedBuffer<ComputeBlock> 
                 vmath::vec3 p(pdata.x, pdata.y, pdata.z);
                 p -= blockPositionOffset;
                 float velocity = pdata.v;
+                float massWeight = _isMassWeightedTransferEnabled ? std::max(pdata.m, 1e-6f) : 1.0f;
 
                 vmath::vec3 pmin(p.x - sr, p.y - sr, p.z - sr);
                 vmath::vec3 pmax(p.x + sr, p.y + sr, p.z + sr);
@@ -512,10 +529,11 @@ void VelocityAdvector::_advectionFLIPProducerThread(BoundedBuffer<ComputeBlock> 
                             float d2 = vmath::dot(v, v);
                             if (d2 < rsq) {
                                 float weight = 1.0f - coef1*d2*d2*d2 + coef2*d2*d2 - coef3*d2;
+                                float weightedMass = weight * massWeight;
 
                                 int flatidx = Grid3d::getFlatIndex(i, j, k, _chunkWidth, _chunkWidth);
-                                block.gridBlock.data[flatidx].scalar += weight * velocity;
-                                block.gridBlock.data[flatidx].weight += weight;
+                                block.gridBlock.data[flatidx].scalar += weightedMass * velocity;
+                                block.gridBlock.data[flatidx].weight += weightedMass;
                             }
                         }
                     }
@@ -567,6 +585,7 @@ void VelocityAdvector::_advectionAPICProducerThread(BoundedBuffer<ComputeBlock> 
                 vmath::vec3 p(pdata.x, pdata.y, pdata.z);
                 p -= blockPositionOffset;
                 float velocity = pdata.v;
+                float massWeight = _isMassWeightedTransferEnabled ? std::max(pdata.m, 1e-6f) : 1.0f;
                 vmath::vec3 affine = vmath::vec3(adata.x, adata.y, adata.z);
 
                 GridIndex g = Grid3d::positionToGridIndex(p, _dx);
@@ -601,10 +620,11 @@ void VelocityAdvector::_advectionAPICProducerThread(BoundedBuffer<ComputeBlock> 
                     vmath::vec3 nodepos = Grid3d::GridIndexToPosition(index, _dx);
                     float apicTerm = vmath::dot(affine, nodepos - p);
                     float weight = weights[gidx];
+                    float weightedMass = weight * massWeight;
 
                     int flatidx = Grid3d::getFlatIndex(index, _chunkWidth, _chunkWidth);
-                    block.gridBlock.data[flatidx].scalar += weight * (velocity + apicTerm);
-                    block.gridBlock.data[flatidx].weight += weight;
+                    block.gridBlock.data[flatidx].scalar += weightedMass * (velocity + apicTerm);
+                    block.gridBlock.data[flatidx].weight += weightedMass;
                 }
 
             }

@@ -178,6 +178,13 @@ public:
 
     double getDiffuseParticleDustEmissionRate();
     void setDiffuseParticleDustEmissionRate(double r);
+    int getMaxEmissionParticlesPerEmitter();
+    void setMaxEmissionParticlesPerEmitter(int n);
+
+    int getLastFrameEmitterCount();
+    int getLastFrameDustEmitterCount();
+    int getLastFrameEmittedParticleCount();
+    int getLastFrameEmissionClampedParticleCount();
 
     double getFoamAdvectionStrength();
     void setFoamAdvectionStrength(double s);
@@ -472,6 +479,7 @@ private:
     double _wavecrestEmissionRate = 175;
     double _turbulenceEmissionRate = 175;
     double _dustEmissionRate = 175;
+    int _maxEmissionParticlesPerEmitter = 0; // 0 disables limiter
     double _foamLayerOffset = 0.0;                     // in number of grid cells
     double _maxFoamToSurfaceDistance = 1.0;            // in number of grid cells
     double _foamBufferWidth = 1.0;                     // in number of grid cells
@@ -537,6 +545,11 @@ private:
     Array3d<bool> _isBorderingAirGridSet;
     TurbulenceField _turbulenceField;
     ParticleSystem _diffuseParticles;
+
+    int _lastFrameEmitterCount = 0;
+    int _lastFrameDustEmitterCount = 0;
+    int _lastFrameEmittedParticleCount = 0;
+    int _lastFrameEmissionClampedParticleCount = 0;
 
     int _currentDiffuseParticleID = 0;
     int _diffuseParticleIDLimit = 256;

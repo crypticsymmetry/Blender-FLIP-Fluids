@@ -50,6 +50,16 @@ def format_long_time(t):
     return "%d:%02d:%02d" % (h, m, s)
 
 
+def format_pressure_solver_method(method_id):
+    if method_id == 0:
+        return "PCG"
+    if method_id == 1:
+        return "FPCG"
+    if method_id == 2:
+        return "AMG/FPCG"
+    return "Unknown (" + str(method_id) + ")"
+
+
 def draw_frame_info_simulation_stats(self, context, box):
     sprops = vcu.get_active_object(context).flip_fluid.domain.stats
     simprops = vcu.get_active_object(context).flip_fluid.domain.simulation
@@ -133,6 +143,10 @@ def draw_frame_info_solver_stats(self, context, box):
                 column1.label(text="Solver Status:")
                 column1.label(text="Iterations:")
                 column1.label(text="Estimated Error:")
+                column1.label(text="Requested Backend:")
+                column1.label(text="Used Backend:")
+                column1.label(text="Fallback Used:")
+                column1.label(text="AMG Levels Built:")
                 row = column1.row(align=True)
                 row.alert = sprops.frame_pressure_solver_stress.stress_level > stress_threshold
                 row.label(text="Stress Level:")
@@ -146,6 +160,10 @@ def draw_frame_info_solver_stats(self, context, box):
                 column2.label(text=status_state)
                 column2.label(text=iterations_str)
                 column2.label(text=error_str)
+                column2.label(text=format_pressure_solver_method(sprops.frame_pressure_solver_requested_method))
+                column2.label(text=format_pressure_solver_method(sprops.frame_pressure_solver_used_method))
+                column2.label(text=str(bool(sprops.frame_pressure_solver_fallback_used)))
+                column2.label(text=str(sprops.frame_pressure_solver_amg_levels_built))
 
                 stress_status = "OK"
                 if sprops.frame_pressure_solver_stress.stress_level > stress_threshold:
@@ -723,6 +741,9 @@ def draw_cache_info_solver_stats(self, context, box):
             column_left.label(text="Max Iterations:")
             column_left.label(text="Max Error:")
             column_left.label(text="Max Stress:")
+            column_left.label(text="Backend Steps:")
+            column_left.label(text="Fallback Frames:")
+            column_left.label(text="Max AMG Levels:")
 
             failure_str = str(sprops.pressure_solver_failures) + " failures / " + str(sprops.pressure_solver_steps) + " steps"
             iterations_str = str(sprops.pressure_solver_max_iterations)
@@ -734,16 +755,29 @@ def draw_cache_info_solver_stats(self, context, box):
             if sprops.pressure_solver_max_stress >= 99.999:
                 stress_state = "MAX"
             stress_str = '{0:.1f}'.format(sprops.pressure_solver_max_stress) + "%   " + stress_state
+            backend_steps_str = (
+                "PCG " + str(sprops.pressure_solver_steps_pcg) +
+                " | FPCG " + str(sprops.pressure_solver_steps_fpcg) +
+                " | AMG/FPCG " + str(sprops.pressure_solver_steps_amg_fpcg)
+            )
+            fallback_str = str(sprops.pressure_solver_fallback_count)
+            amg_levels_str = str(sprops.pressure_solver_max_amg_levels)
 
             column_middle.label(text=failure_str)
             column_middle.label(text=iterations_str)
             column_middle.label(text=error_str)
             column_middle.label(text=stress_str)
+            column_middle.label(text=backend_steps_str)
+            column_middle.label(text=fallback_str)
+            column_middle.label(text=amg_levels_str)
 
             column_right.label(text="")
             column_right.label(text="(frame " + str(sprops.pressure_solver_max_iterations_frame) + ")")
             column_right.label(text="(frame " + str(sprops.pressure_solver_max_error_frame) + ")")
             column_right.label(text="(frame " + str(sprops.pressure_solver_max_stress_frame) + ")")
+            column_right.label(text="")
+            column_right.label(text="")
+            column_right.label(text="(frame " + str(sprops.pressure_solver_max_amg_levels_frame) + ")")
 
     if sprops.viscosity_solver_enabled:
         viscosity_box = subbox.box()

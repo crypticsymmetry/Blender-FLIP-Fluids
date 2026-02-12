@@ -38,6 +38,8 @@ SOFTWARE.
 #include "interpolation.h"
 
 #include "stopwatch.h"
+#include <limits>
+#include <unordered_map>
 
 /********************************************************************************
     PressureSolver
@@ -52,7 +54,9 @@ PressureSolver::~PressureSolver() {
 bool PressureSolver::solve(PressureSolverParameters params) {
 
     _initialize(params);
-    _conditionSolidVelocityField();
+    if (!_isVariableDensityPressureProjectionEnabled) {
+        _conditionSolidVelocityField();
+    }
     _initializeSurfaceTensionClusterData();
 
     std::vector<double> rhs(_matSize, 0);
@@ -127,19 +131,43 @@ void PressureSolver::_initialize(PressureSolverParameters params) {
     _vFieldSolid = params.velocityFieldSolid;
     _validVelocities = params.validVelocities;
     _liquidSDF = params.liquidSDF;
+    _phaseField = params.phaseField;
     _weightGrid = params.weightGrid;
     _pressureGrid = params.pressureGrid;
+
+    _isVariableDensityPressureProjectionEnabled = params.isVariableDensityPressureProjectionEnabled;
+    _liquidDensity = std::max(1e-6f, params.liquidDensity);
+    _gasDensity = std::max(1e-6f, params.gasDensity);
+    _pressureAirBandWidthCells = std::max(0, params.pressureAirBandWidthCells);
+    _solverBackend = params.solverBackend;
+    _requestedSolverBackend = params.solverBackend;
+    _usedSolverBackend = params.solverBackend;
+    _isFallbackSolverUsed = false;
+    _amgLevelsBuilt = 1;
+    _multigridLevels = std::max(2, params.multigridLevels);
+    _multigridPreSmoothIterations = std::max(1, params.multigridPreSmoothIterations);
+    _multigridPostSmoothIterations = std::max(1, params.multigridPostSmoothIterations);
 
     _isSurfaceTensionEnabled = params.isSurfaceTensionEnabled;
     _surfaceTensionConstant = params.surfaceTensionConstant;
     _curvatureGrid = params.curvatureGrid;
 
+    _initializeBetaField();
+
     _pressureCells = GridIndexVector(_isize, _jsize, _ksize);
     for(int k = 1; k < _ksize - 1; k++) {
         for(int j = 1; j < _jsize - 1; j++) {
             for(int i = 1; i < _isize - 1; i++) {
-                if(_liquidSDF->get(i, j, k) < 0) {
-                    _pressureCells.push_back(i, j, k);
+                float phi = _liquidSDF->get(i, j, k);
+                if (_isVariableDensityPressureProjectionEnabled) {
+                    float airBandDistance = (float)(_pressureAirBandWidthCells * _dx);
+                    if (phi <= airBandDistance) {
+                        _pressureCells.push_back(i, j, k);
+                    }
+                } else {
+                    if (phi < 0.0f) {
+                        _pressureCells.push_back(i, j, k);
+                    }
                 }
             }
         }
@@ -155,6 +183,65 @@ void PressureSolver::_initializeGridIndexKeyMap() {
     for (unsigned int idx = 0; idx < _pressureCells.size(); idx++) {
         _keymap.insert(_pressureCells[idx], idx);
     }
+}
+
+void PressureSolver::_initializeBetaField() {
+    _betaU = Array3d<float>(_isize + 1, _jsize, _ksize, 1.0f);
+    _betaV = Array3d<float>(_isize, _jsize + 1, _ksize, 1.0f);
+    _betaW = Array3d<float>(_isize, _jsize, _ksize + 1, 1.0f);
+
+    if (!_isVariableDensityPressureProjectionEnabled) {
+        return;
+    }
+
+    for (int k = 0; k < _ksize; k++) {
+        for (int j = 0; j < _jsize; j++) {
+            for (int i = 0; i < _isize + 1; i++) {
+                float phase1 = _getPhaseValue(i - 1, j, k);
+                float phase2 = _getPhaseValue(i, j, k);
+                float phaseFace = 0.5f * (phase1 + phase2);
+                double rho = phaseFace * _liquidDensity + (1.0 - phaseFace) * _gasDensity;
+                _betaU.set(i, j, k, (float)(1.0 / std::max(rho, 1e-6)));
+            }
+        }
+    }
+
+    for (int k = 0; k < _ksize; k++) {
+        for (int j = 0; j < _jsize + 1; j++) {
+            for (int i = 0; i < _isize; i++) {
+                float phase1 = _getPhaseValue(i, j - 1, k);
+                float phase2 = _getPhaseValue(i, j, k);
+                float phaseFace = 0.5f * (phase1 + phase2);
+                double rho = phaseFace * _liquidDensity + (1.0 - phaseFace) * _gasDensity;
+                _betaV.set(i, j, k, (float)(1.0 / std::max(rho, 1e-6)));
+            }
+        }
+    }
+
+    for (int k = 0; k < _ksize + 1; k++) {
+        for (int j = 0; j < _jsize; j++) {
+            for (int i = 0; i < _isize; i++) {
+                float phase1 = _getPhaseValue(i, j, k - 1);
+                float phase2 = _getPhaseValue(i, j, k);
+                float phaseFace = 0.5f * (phase1 + phase2);
+                double rho = phaseFace * _liquidDensity + (1.0 - phaseFace) * _gasDensity;
+                _betaW.set(i, j, k, (float)(1.0 / std::max(rho, 1e-6)));
+            }
+        }
+    }
+}
+
+float PressureSolver::_getPhaseValue(int i, int j, int k) const {
+    int ic = std::max(0, std::min(i, _isize - 1));
+    int jc = std::max(0, std::min(j, _jsize - 1));
+    int kc = std::max(0, std::min(k, _ksize - 1));
+
+    if (_phaseField != nullptr && _phaseField->isIndexInRange(ic, jc, kc)) {
+        float phase = _phaseField->get(ic, jc, kc);
+        return std::max(0.0f, std::min(1.0f, phase));
+    }
+
+    return _liquidSDF->get(ic, jc, kc) < 0.0f ? 1.0f : 0.0f;
 }
 
 void PressureSolver::_conditionSolidVelocityField() {
@@ -655,7 +742,7 @@ void PressureSolver::_calculateNegativeDivergenceVectorThread(int startidx,
         divergence +=  factor * (volFront -  volCenter) * _vFieldSolid->W(i,     j,     k + 1);
         divergence += -factor * (volBack -   volCenter) * _vFieldSolid->W(i,     j,     k    );
 
-        if (_isSurfaceTensionEnabled) {
+        if (_isSurfaceTensionEnabled && !_isVariableDensityPressureProjectionEnabled) {
             double phiCenter = _liquidSDF->get(i,     j,     k    );
             double phiRight =  _liquidSDF->get(i + 1, j,     k    );
             double phiLeft =   _liquidSDF->get(i - 1,     j, k    );
@@ -781,6 +868,50 @@ void PressureSolver::_calculateMatrixCoefficientsThread(int startidx, int endidx
         double volFront =  _weightGrid->W(i,     j,     k + 1);
         double volBack =   _weightGrid->W(i,     j,     k    );
 
+        if (_isVariableDensityPressureProjectionEnabled) {
+            double coeffRight = volRight * factor * _betaU(i + 1, j, k);
+            double coeffLeft = volLeft * factor * _betaU(i, j, k);
+            double coeffTop = volTop * factor * _betaV(i, j + 1, k);
+            double coeffBottom = volBottom * factor * _betaV(i, j, k);
+            double coeffFront = volFront * factor * _betaW(i, j, k + 1);
+            double coeffBack = volBack * factor * _betaW(i, j, k);
+
+            double diag = 0.0;
+
+            if (_isPressureCell(i + 1, j, k)) {
+                matrix->add(index, _GridToVectorIndex(i + 1, j, k), -coeffRight);
+            }
+            diag += coeffRight;
+
+            if (_isPressureCell(i - 1, j, k)) {
+                matrix->add(index, _GridToVectorIndex(i - 1, j, k), -coeffLeft);
+            }
+            diag += coeffLeft;
+
+            if (_isPressureCell(i, j + 1, k)) {
+                matrix->add(index, _GridToVectorIndex(i, j + 1, k), -coeffTop);
+            }
+            diag += coeffTop;
+
+            if (_isPressureCell(i, j - 1, k)) {
+                matrix->add(index, _GridToVectorIndex(i, j - 1, k), -coeffBottom);
+            }
+            diag += coeffBottom;
+
+            if (_isPressureCell(i, j, k + 1)) {
+                matrix->add(index, _GridToVectorIndex(i, j, k + 1), -coeffFront);
+            }
+            diag += coeffFront;
+
+            if (_isPressureCell(i, j, k - 1)) {
+                matrix->add(index, _GridToVectorIndex(i, j, k - 1), -coeffBack);
+            }
+            diag += coeffBack;
+
+            matrix->set(index, index, std::max(diag, 0.0));
+            continue;
+        }
+
         double phiCenter = _liquidSDF->get(i,     j,     k    );
         double phiRight =  _liquidSDF->get(i + 1, j,     k    );
         double phiLeft =   _liquidSDF->get(i - 1,     j, k    );
@@ -852,19 +983,38 @@ void PressureSolver::_calculateMatrixCoefficientsThread(int startidx, int endidx
 
 bool PressureSolver::_solveLinearSystem(SparseMatrixd &matrix, std::vector<double> &rhs, 
                                         std::vector<double> &soln) {
-    bool success = true;
-    double estimatedError = -1.0f;
+    bool success = false;
+    bool attemptedFallback = false;
+    bool fallbackSuccess = false;
+    double estimatedError = std::numeric_limits<double>::infinity();
     int numIterations = 0;
+    std::string backendLabel = "PCG";
 
-    bool useJacobiSolve = false;
-    if (useJacobiSolve) {
-        // Basic Jacobi Solve
-        success = _solveLinearSystemJacobi(matrix, rhs, soln, &numIterations, &estimatedError);
-    } else {
-        // PCG Solve
-        PCGSolver<double> solver;
-        solver.setSolverParameters(_pressureSolveTolerance, _maxCGIterations);
-        success = solver.solve(matrix, rhs, soln, estimatedError, numIterations);
+    if (_solverBackend == PressureSolverBackend::PCG) {
+        backendLabel = "PCG";
+        success = _solveLinearSystemPCG(matrix, rhs, soln, &numIterations, &estimatedError);
+        _usedSolverBackend = PressureSolverBackend::PCG;
+    } else if (_solverBackend == PressureSolverBackend::FPCG) {
+        backendLabel = "FPCG (Diagonal Preconditioner)";
+        success = _solveLinearSystemFPCG(matrix, rhs, soln, &numIterations, &estimatedError);
+        _usedSolverBackend = PressureSolverBackend::FPCG;
+    } else if (_solverBackend == PressureSolverBackend::AMG_FPCG) {
+        backendLabel = "AMG/FPCG";
+        success = _solveLinearSystemAMGFPCG(matrix, rhs, soln, &numIterations, &estimatedError);
+        _usedSolverBackend = PressureSolverBackend::AMG_FPCG;
+    }
+
+    if (!success && _solverBackend != PressureSolverBackend::PCG) {
+        attemptedFallback = true;
+        _isFallbackSolverUsed = true;
+        fallbackSuccess = _solveLinearSystemPCG(matrix, rhs, soln, &numIterations, &estimatedError);
+        success = fallbackSuccess;
+        _usedSolverBackend = PressureSolverBackend::PCG;
+        if (fallbackSuccess) {
+            backendLabel += " -> PCG Fallback";
+        } else {
+            backendLabel += " -> PCG Fallback (Failed)";
+        }
     }
 
     _pressureGrid->fill(0.0f);
@@ -878,25 +1028,417 @@ bool PressureSolver::_solveLinearSystem(SparseMatrixd &matrix, std::vector<doubl
 
     bool retval;
     std::ostringstream ss;
+    ss << "Pressure Solver Backend: " << backendLabel;
+    ss << "\nRequested Backend ID: " << (int)_requestedSolverBackend;
+    ss << "\nUsed Backend ID: " << (int)_usedSolverBackend;
+    ss << "\nFallback Used: " << (_isFallbackSolverUsed ? "True" : "False");
+    ss << "\nAMG Levels Built: " << _amgLevelsBuilt;
+
+    bool isAcceptableFailure = !success &&
+                               _solverIterations == _maxCGIterations &&
+                               std::isfinite(_solverError) &&
+                               _solverError < _pressureSolveAcceptableTolerance;
     if (success) {
-        ss << "Pressure Solver Iterations: " << _solverIterations <<
+        ss << "\nPressure Solver Iterations: " << _solverIterations <<
               "\nEstimated Error: " << _solverError;
         retval = true;
-    } else if (_solverIterations == _maxCGIterations && 
-                    _solverError < _pressureSolveAcceptableTolerance) {
-        ss << "Pressure Solver Iterations: " << _solverIterations <<
-              "\nEstimated Error: " << _solverError;
+    } else if (isAcceptableFailure) {
+        ss << "\nPressure Solver Iterations: " << _solverIterations <<
+              "\nEstimated Error: " << _solverError <<
+              "\nSolver reached max iterations but remained within acceptable tolerance.";
         retval = true;
     } else {
-        ss << "***Pressure Solver FAILED" <<
+        ss << "\n***Pressure Solver FAILED" <<
               "\nPressure Solver Iterations: " << _solverIterations <<
               "\nEstimated Error: " << _solverError;
         retval = false;
     }
 
+    if (attemptedFallback && fallbackSuccess) {
+        ss << "\nSelected backend did not converge and was recovered by PCG fallback.";
+    } else if (attemptedFallback && !fallbackSuccess) {
+        ss << "\nPCG fallback also failed.";
+    }
+
     _solverStatus = ss.str();
 
     return retval;
+}
+
+bool PressureSolver::_solveLinearSystemPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                                           std::vector<double> &soln, int *iterations, double *error) {
+    PCGSolver<double> solver;
+    solver.setSolverParameters(_pressureSolveTolerance, _maxCGIterations);
+    return solver.solve(matrix, rhs, soln, *error, *iterations);
+}
+
+bool PressureSolver::_solveLinearSystemFPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                                            std::vector<double> &soln, int *iterations, double *error) {
+    std::vector<double> diagonalInv;
+    _computeDiagonalInverse(matrix, &diagonalInv);
+
+    auto preconditioner = [this, &diagonalInv](const std::vector<double> &r, std::vector<double> *z) {
+        _applyDiagonalPreconditioner(diagonalInv, r, z);
+    };
+
+    return _solveLinearSystemPreconditionedCG(matrix, rhs, &soln, preconditioner, iterations, error);
+}
+
+bool PressureSolver::_solveLinearSystemAMGFPCG(SparseMatrixd &matrix, std::vector<double> &rhs,
+                                               std::vector<double> &soln, int *iterations, double *error) {
+    std::vector<AMGLevel> hierarchy;
+    if (!_buildAMGHierarchy(matrix, &hierarchy)) {
+        _amgLevelsBuilt = 1;
+        return false;
+    }
+    _amgLevelsBuilt = std::max(1, (int)hierarchy.size());
+
+    auto preconditioner = [this, &hierarchy](const std::vector<double> &r, std::vector<double> *z) {
+        z->assign(r.size(), 0.0);
+        _runAMGVcycle(hierarchy, 0, r, z);
+    };
+
+    return _solveLinearSystemPreconditionedCG(matrix, rhs, &soln, preconditioner, iterations, error);
+}
+
+bool PressureSolver::_buildAMGHierarchy(SparseMatrixd &matrix, std::vector<AMGLevel> *hierarchy) {
+    hierarchy->clear();
+    if (matrix.n == 0) {
+        return false;
+    }
+
+    AMGLevel finestLevel;
+    finestLevel.matrix = matrix;
+    finestLevel.fixedMatrix.fromMatrix(finestLevel.matrix);
+    _computeDiagonalInverse(finestLevel.matrix, &finestLevel.diagonalInv);
+    finestLevel.coordinates.reserve(_pressureCells.size());
+    for (size_t i = 0; i < _pressureCells.size(); i++) {
+        finestLevel.coordinates.push_back(_pressureCells[i]);
+    }
+
+    hierarchy->push_back(finestLevel);
+
+    int maxLevels = std::max(2, _multigridLevels);
+    while ((int)hierarchy->size() < maxLevels) {
+        AMGLevel coarseLevel;
+        if (!_buildCoarseAMGLevel(&hierarchy->back(), &coarseLevel)) {
+            break;
+        }
+
+        if (coarseLevel.matrix.n >= hierarchy->back().matrix.n) {
+            break;
+        }
+
+        hierarchy->push_back(coarseLevel);
+        if (coarseLevel.matrix.n <= 16) {
+            break;
+        }
+    }
+
+    return hierarchy->size() > 1;
+}
+
+bool PressureSolver::_buildCoarseAMGLevel(AMGLevel *fineLevel, AMGLevel *coarseLevel) {
+    if (fineLevel->matrix.n < 32 || fineLevel->coordinates.size() != fineLevel->matrix.n) {
+        return false;
+    }
+
+    std::unordered_map<long long, int> coarseMap;
+    coarseMap.reserve(fineLevel->matrix.n);
+    fineLevel->fineToCoarse.assign(fineLevel->matrix.n, -1);
+    fineLevel->coarseToFine.clear();
+
+    std::vector<GridIndex> coarseCoordinates;
+    coarseCoordinates.reserve(fineLevel->matrix.n);
+
+    auto getKey = [](const GridIndex &g) -> long long {
+        return ((long long)g.i << 42) ^ ((long long)g.j << 21) ^ (long long)g.k;
+    };
+
+    for (size_t fineIdx = 0; fineIdx < fineLevel->coordinates.size(); fineIdx++) {
+        GridIndex g = fineLevel->coordinates[fineIdx];
+        GridIndex coarseCell(g.i / 2, g.j / 2, g.k / 2);
+        long long key = getKey(coarseCell);
+
+        auto it = coarseMap.find(key);
+        int coarseIdx = -1;
+        if (it == coarseMap.end()) {
+            coarseIdx = (int)fineLevel->coarseToFine.size();
+            coarseMap.insert(std::make_pair(key, coarseIdx));
+            fineLevel->coarseToFine.push_back(std::vector<int>());
+            coarseCoordinates.push_back(coarseCell);
+        } else {
+            coarseIdx = it->second;
+        }
+
+        fineLevel->fineToCoarse[fineIdx] = coarseIdx;
+        fineLevel->coarseToFine[coarseIdx].push_back((int)fineIdx);
+    }
+
+    int coarseSize = (int)fineLevel->coarseToFine.size();
+    if (coarseSize < 2 || coarseSize >= (int)fineLevel->matrix.n) {
+        return false;
+    }
+
+    coarseLevel->matrix = SparseMatrixd(coarseSize, 27);
+    for (unsigned int row = 0; row < fineLevel->matrix.n; row++) {
+        int coarseRow = fineLevel->fineToCoarse[row];
+        for (size_t nidx = 0; nidx < fineLevel->matrix.index[row].size(); nidx++) {
+            int fineCol = (int)fineLevel->matrix.index[row][nidx];
+            int coarseCol = fineLevel->fineToCoarse[fineCol];
+            double value = fineLevel->matrix.value[row][nidx];
+            coarseLevel->matrix.add(coarseRow, coarseCol, value);
+        }
+    }
+
+    double eps = 1e-12;
+    for (int i = 0; i < coarseSize; i++) {
+        bool hasDiagonal = false;
+        double diagonal = 0.0;
+        double offDiagonalAbsSum = 0.0;
+        for (size_t nidx = 0; nidx < coarseLevel->matrix.index[i].size(); nidx++) {
+            int j = (int)coarseLevel->matrix.index[i][nidx];
+            double value = coarseLevel->matrix.value[i][nidx];
+            if (i == j) {
+                hasDiagonal = true;
+                diagonal = value;
+            } else {
+                offDiagonalAbsSum += std::abs(value);
+            }
+        }
+
+        if (!hasDiagonal || diagonal <= eps || !std::isfinite(diagonal)) {
+            coarseLevel->matrix.set(i, i, std::max(1.0, offDiagonalAbsSum));
+        }
+    }
+
+    coarseLevel->fixedMatrix.fromMatrix(coarseLevel->matrix);
+    _computeDiagonalInverse(coarseLevel->matrix, &coarseLevel->diagonalInv);
+    coarseLevel->coordinates = coarseCoordinates;
+
+    return true;
+}
+
+void PressureSolver::_computeDiagonalInverse(const SparseMatrixd &matrix, std::vector<double> *diagInv) {
+    diagInv->assign(matrix.n, 1.0);
+    double eps = 1e-12;
+    for (unsigned int i = 0; i < matrix.n; i++) {
+        double diagonal = 0.0;
+        bool hasDiagonal = false;
+        for (size_t nidx = 0; nidx < matrix.index[i].size(); nidx++) {
+            if ((int)matrix.index[i][nidx] == (int)i) {
+                diagonal = matrix.value[i][nidx];
+                hasDiagonal = true;
+                break;
+            }
+        }
+
+        if (hasDiagonal && std::isfinite(diagonal) && std::abs(diagonal) > eps) {
+            (*diagInv)[i] = 1.0 / diagonal;
+        } else {
+            (*diagInv)[i] = 1.0;
+        }
+    }
+}
+
+void PressureSolver::_applyFixedMatrix(const FixedSparseMatrixd &matrix, const std::vector<double> &x,
+                                       std::vector<double> *result) {
+    multiply(const_cast<FixedSparseMatrixd&>(matrix), const_cast<std::vector<double>&>(x), *result);
+}
+
+void PressureSolver::_applyDiagonalPreconditioner(const std::vector<double> &diagInv,
+                                                  const std::vector<double> &rhs,
+                                                  std::vector<double> *out) {
+    out->resize(rhs.size());
+    for (size_t i = 0; i < rhs.size(); i++) {
+        (*out)[i] = diagInv[i] * rhs[i];
+    }
+}
+
+void PressureSolver::_smoothJacobi(const AMGLevel &level, const std::vector<double> &rhs,
+                                   std::vector<double> *x, int iterations) {
+    if (level.matrix.n == 0 || rhs.empty()) {
+        return;
+    }
+
+    x->resize(rhs.size(), 0.0);
+    std::vector<double> Ax(rhs.size(), 0.0);
+    std::vector<double> xnext(rhs.size(), 0.0);
+    double omega = 0.8;
+    for (int iter = 0; iter < iterations; iter++) {
+        _applyFixedMatrix(level.fixedMatrix, *x, &Ax);
+        for (size_t i = 0; i < rhs.size(); i++) {
+            xnext[i] = (*x)[i] + omega * level.diagonalInv[i] * (rhs[i] - Ax[i]);
+        }
+        x->swap(xnext);
+    }
+}
+
+void PressureSolver::_restrictResidual(const AMGLevel &fineLevel, const std::vector<double> &fineResidual,
+                                       std::vector<double> *coarseResidual) {
+    coarseResidual->assign(fineLevel.coarseToFine.size(), 0.0);
+    for (size_t fineIdx = 0; fineIdx < fineResidual.size(); fineIdx++) {
+        int coarseIdx = fineLevel.fineToCoarse[fineIdx];
+        if (coarseIdx >= 0) {
+            (*coarseResidual)[coarseIdx] += fineResidual[fineIdx];
+        }
+    }
+}
+
+void PressureSolver::_prolongateCorrection(const AMGLevel &fineLevel, const std::vector<double> &coarseCorrection,
+                                           std::vector<double> *fineCorrection) {
+    if (fineCorrection->size() != fineLevel.matrix.n) {
+        fineCorrection->resize(fineLevel.matrix.n, 0.0);
+    }
+
+    for (size_t coarseIdx = 0; coarseIdx < fineLevel.coarseToFine.size(); coarseIdx++) {
+        double value = coarseCorrection[coarseIdx];
+        const std::vector<int> &fineIndices = fineLevel.coarseToFine[coarseIdx];
+        for (size_t fi = 0; fi < fineIndices.size(); fi++) {
+            (*fineCorrection)[fineIndices[fi]] += value;
+        }
+    }
+}
+
+void PressureSolver::_runAMGVcycle(const std::vector<AMGLevel> &hierarchy, int levelidx,
+                                   const std::vector<double> &rhs, std::vector<double> *x) {
+    const AMGLevel &level = hierarchy[levelidx];
+    if (levelidx == (int)hierarchy.size() - 1 || level.matrix.n <= 16) {
+        _smoothJacobi(level, rhs, x, 12);
+        return;
+    }
+
+    _smoothJacobi(level, rhs, x, _multigridPreSmoothIterations);
+
+    std::vector<double> Ax(level.matrix.n, 0.0);
+    _applyFixedMatrix(level.fixedMatrix, *x, &Ax);
+
+    std::vector<double> residual(level.matrix.n, 0.0);
+    for (size_t i = 0; i < residual.size(); i++) {
+        residual[i] = rhs[i] - Ax[i];
+    }
+
+    std::vector<double> coarseResidual;
+    _restrictResidual(level, residual, &coarseResidual);
+
+    std::vector<double> coarseCorrection(coarseResidual.size(), 0.0);
+    _runAMGVcycle(hierarchy, levelidx + 1, coarseResidual, &coarseCorrection);
+
+    _prolongateCorrection(level, coarseCorrection, x);
+    _smoothJacobi(level, rhs, x, _multigridPostSmoothIterations);
+}
+
+bool PressureSolver::_solveLinearSystemPreconditionedCG(
+        const SparseMatrixd &matrix,
+        const std::vector<double> &rhs,
+        std::vector<double> *soln,
+        const std::function<void (const std::vector<double> &, std::vector<double> *)> &preconditioner,
+        int *iterations, double *error) {
+    if (matrix.n == 0) {
+        *iterations = 0;
+        *error = 0.0;
+        return true;
+    }
+
+    if (soln->size() != matrix.n) {
+        soln->assign(matrix.n, 0.0);
+    }
+
+    FixedSparseMatrixd fixedMatrix;
+    fixedMatrix.fromMatrix(matrix);
+
+    std::vector<double> Ax(matrix.n, 0.0);
+    _applyFixedMatrix(fixedMatrix, *soln, &Ax);
+
+    std::vector<double> r(matrix.n, 0.0);
+    for (size_t i = 0; i < matrix.n; i++) {
+        r[i] = rhs[i] - Ax[i];
+    }
+
+    auto maxAbs = [](const std::vector<double> &data) -> double {
+        double maxValue = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+            maxValue = std::max(maxValue, std::abs(data[i]));
+        }
+        return maxValue;
+    };
+
+    auto dot = [](const std::vector<double> &a, const std::vector<double> &b) -> double {
+        double value = 0.0;
+        for (size_t i = 0; i < a.size(); i++) {
+            value += a[i] * b[i];
+        }
+        return value;
+    };
+
+    double residual = maxAbs(r);
+    *error = residual;
+    if (residual == 0.0) {
+        *iterations = 0;
+        return true;
+    }
+
+    double tolerance = _pressureSolveTolerance * residual;
+    double convergenceTolerance = std::min(tolerance, 1.0);
+    double eps = 1e-30;
+
+    std::vector<double> z(matrix.n, 0.0);
+    std::vector<double> p(matrix.n, 0.0);
+    std::vector<double> q(matrix.n, 0.0);
+
+    preconditioner(r, &z);
+    double rho = dot(r, z);
+    if (!std::isfinite(rho) || std::abs(rho) < eps) {
+        *iterations = 0;
+        *error = residual;
+        return false;
+    }
+
+    p = z;
+    int iteration = 0;
+    for (iteration = 0; iteration < _maxCGIterations; iteration++) {
+        _applyFixedMatrix(fixedMatrix, p, &q);
+        double denom = dot(p, q);
+        if (!std::isfinite(denom) || std::abs(denom) < eps) {
+            break;
+        }
+
+        double alpha = rho / denom;
+        if (!std::isfinite(alpha)) {
+            break;
+        }
+
+        for (size_t i = 0; i < matrix.n; i++) {
+            (*soln)[i] += alpha * p[i];
+            r[i] -= alpha * q[i];
+        }
+
+        residual = maxAbs(r);
+        *error = residual;
+        if (residual <= convergenceTolerance) {
+            *iterations = iteration + 1;
+            return true;
+        }
+
+        preconditioner(r, &z);
+        double rhoNext = dot(r, z);
+        if (!std::isfinite(rhoNext) || std::abs(rho) < eps) {
+            break;
+        }
+
+        double beta = rhoNext / rho;
+        if (!std::isfinite(beta)) {
+            break;
+        }
+
+        for (size_t i = 0; i < matrix.n; i++) {
+            p[i] = z[i] + beta * p[i];
+        }
+        rho = rhoNext;
+    }
+
+    *iterations = iteration;
+    return false;
 }
 
 bool PressureSolver::_solveLinearSystemJacobi(SparseMatrixd &matrix, std::vector<double> &b, 
@@ -1039,13 +1581,27 @@ void PressureSolver::_applyPressureToVelocityFieldThread(int startidx, int endid
 
         for (int idx = startidx; idx < endidx; idx++) {
             GridIndex g = Grid3d::getUnflattenedIndex(idx, _isize + 1, _jsize);
-            if (g.i == 0 || g.i == _isize - 1) {
+            if (g.i == 0 || g.i == _isize) {
                 continue;
             }
 
             int pi = g.i - 1;
             int pj = g.j;
             int pk = g.k;
+
+            if (_isVariableDensityPressureProjectionEnabled) {
+                bool hasPressureNeighbor = _isPressureCell(pi, pj, pk) || _isPressureCell(pi + 1, pj, pk);
+                if (_weightGrid->U(g) > 0 && hasPressureNeighbor) {
+                    float p1 = _isPressureCell(pi, pj, pk) ? _pressureGrid->get(pi, pj, pk) : 0.0f;
+                    float p2 = _isPressureCell(pi + 1, pj, pk) ? _pressureGrid->get(pi + 1, pj, pk) : 0.0f;
+                    float beta = _betaU(g);
+                    _vFieldFluid->addU(g, -factor * beta * (p2 - p1));
+                    _validVelocities->validU.set(g, true);
+                } else {
+                    _vFieldFluid->setU(g, 0.0);
+                }
+                continue;
+            }
 
             if (_weightGrid->U(g) > 0 && mgrid->isFaceBorderingFluidU(g)) {
 
@@ -1087,13 +1643,27 @@ void PressureSolver::_applyPressureToVelocityFieldThread(int startidx, int endid
 
         for (int idx = startidx; idx < endidx; idx++) {
             GridIndex g = Grid3d::getUnflattenedIndex(idx, _isize, _jsize + 1);
-            if (g.j == 0 || g.j == _jsize - 1) {
+            if (g.j == 0 || g.j == _jsize) {
                 continue;
             }
 
             int pi = g.i;
             int pj = g.j - 1;
             int pk = g.k;
+
+            if (_isVariableDensityPressureProjectionEnabled) {
+                bool hasPressureNeighbor = _isPressureCell(pi, pj, pk) || _isPressureCell(pi, pj + 1, pk);
+                if (_weightGrid->V(g) > 0 && hasPressureNeighbor) {
+                    float p1 = _isPressureCell(pi, pj, pk) ? _pressureGrid->get(pi, pj, pk) : 0.0f;
+                    float p2 = _isPressureCell(pi, pj + 1, pk) ? _pressureGrid->get(pi, pj + 1, pk) : 0.0f;
+                    float beta = _betaV(g);
+                    _vFieldFluid->addV(g, -factor * beta * (p2 - p1));
+                    _validVelocities->validV.set(g, true);
+                } else {
+                    _vFieldFluid->setV(g, 0.0);
+                }
+                continue;
+            }
 
             if (_weightGrid->V(g) > 0 && mgrid->isFaceBorderingFluidV(g)) {
 
@@ -1134,13 +1704,27 @@ void PressureSolver::_applyPressureToVelocityFieldThread(int startidx, int endid
 
         for (int idx = startidx; idx < endidx; idx++) {
             GridIndex g = Grid3d::getUnflattenedIndex(idx, _isize, _jsize);
-            if (g.k == 0 || g.k == _ksize - 1) {
+            if (g.k == 0 || g.k == _ksize) {
                 continue;
             }
 
             int pi = g.i;
             int pj = g.j;
             int pk = g.k - 1;
+
+            if (_isVariableDensityPressureProjectionEnabled) {
+                bool hasPressureNeighbor = _isPressureCell(pi, pj, pk) || _isPressureCell(pi, pj, pk + 1);
+                if (_weightGrid->W(g) > 0 && hasPressureNeighbor) {
+                    float p1 = _isPressureCell(pi, pj, pk) ? _pressureGrid->get(pi, pj, pk) : 0.0f;
+                    float p2 = _isPressureCell(pi, pj, pk + 1) ? _pressureGrid->get(pi, pj, pk + 1) : 0.0f;
+                    float beta = _betaW(g);
+                    _vFieldFluid->addW(g, -factor * beta * (p2 - p1));
+                    _validVelocities->validW.set(g, true);
+                } else {
+                    _vFieldFluid->setW(g, 0.0);
+                }
+                continue;
+            }
 
             if (_weightGrid->W(g) > 0 && mgrid->isFaceBorderingFluidW(g)) {
 

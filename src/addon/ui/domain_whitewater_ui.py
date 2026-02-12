@@ -219,6 +219,10 @@ class FLIPFLUID_PT_DomainTypeWhitewaterPanel(bpy.types.Panel):
             column = column.column(align=True)
             column.enabled = wprops.enable_dust
             column.prop(wprops, "dust_emission_rate")
+            if show_advanced_whitewater:
+                column = box.column(align=True)
+                column.alert = highlight_advanced
+                column.prop(wprops, "max_emission_particles_per_emitter")
 
             column = box.column(align=True)
             column.prop(wprops, "spray_emission_speed", slider=True)

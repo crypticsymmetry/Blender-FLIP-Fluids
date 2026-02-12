@@ -88,6 +88,13 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             min=1, soft_max=10000,
             default=900,
             ); exec(conv("pressure_solver_max_iterations"))
+    pressure_solver_method = EnumProperty(
+            name="Pressure Solver Method",
+            description="Linear solver backend for pressure projection",
+            items=types.pressure_solver_methods,
+            default='PRESSURE_SOLVER_METHOD_PCG',
+            options={'HIDDEN'},
+            ); exec(conv("pressure_solver_method"))
     viscosity_solver_max_iterations = IntProperty(
             name="Viscosity Solver Max Iterations",
             description="Maximum number of iterations that the viscosity solver is allowed"
@@ -173,27 +180,27 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             ); exec(conv("threading_mode"))
     enable_adaptive_phase_field_level_set = BoolProperty(
             name="Enable Adaptive Phase Field / MSBG",
-            description="Use an experimental adaptive phase-field level set update with a sparse block backend",
+            description="Enable experimental adaptive phase-field level set reconstruction with an MSBG sparse grid. Improves thin and fast surface detail, but increases memory and solve cost",
             default=False,
             options={'HIDDEN'},
             ); exec(conv("enable_adaptive_phase_field_level_set"))
     adaptive_phase_field_sparse_block_size = IntProperty(
             name="Adaptive Phase Field Block Size",
-            description="Sparse block width used by the experimental adaptive phase field grid",
+            description="Sparse grid block width in cells. Smaller blocks adapt more locally but add overhead; larger blocks are faster but less adaptive",
             min=2, max=64,
-            default=8,
+            default=16,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_sparse_block_size"))
     adaptive_phase_field_levels = IntProperty(
             name="Adaptive Phase Field Levels",
-            description="Number of hierarchy levels used by the experimental adaptive phase field grid",
+            description="Number of adaptive hierarchy levels. More levels capture fine detail better, but can increase solver complexity and runtime",
             min=1, max=8,
             default=3,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_levels"))
     adaptive_phase_field_far_distance = FloatProperty(
             name="Adaptive Phase Field Far Distance",
-            description="Narrow-band distance in voxels around the interface",
+            description="Half-width of the active narrow band around the interface in voxels. Larger values improve stability and continuity but are slower",
             min=0.1, max=64.0,
             default=3.0,
             precision=2,
@@ -201,14 +208,14 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             ); exec(conv("adaptive_phase_field_far_distance"))
     adaptive_phase_field_smoothing_iterations = IntProperty(
             name="Adaptive Phase Field Smoothing Iterations",
-            description="Number of smoothing iterations applied to the adaptive phase field",
+            description="Number of smoothing passes on the phase field each update. More passes reduce noise, but too many can blur or inflate the surface",
             min=0, max=100,
             default=5,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_smoothing_iterations"))
     adaptive_phase_field_smoothing_time_step = FloatProperty(
             name="Adaptive Phase Field Smoothing Time Step",
-            description="Time step used during adaptive phase field smoothing",
+            description="Strength of each smoothing pass. Higher values smooth faster but can over-diffuse detail; lower values preserve sharper features",
             min=0.001, max=1.0,
             default=0.05,
             precision=3,
@@ -216,14 +223,14 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             ); exec(conv("adaptive_phase_field_smoothing_time_step"))
     adaptive_phase_field_smoothing_band_layers = IntProperty(
             name="Adaptive Phase Field Smoothing Band Layers",
-            description="Number of active narrow-band expansion layers used for smoothing",
+            description="Extra narrow-band layers included in smoothing. More layers improve robustness around fast motion, fewer layers keep interfaces sharper",
             min=0, max=16,
             default=2,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_smoothing_band_layers"))
     adaptive_phase_field_velocity_refinement_scale = FloatProperty(
             name="Adaptive Phase Field Velocity Refinement Scale",
-            description="Controls how strongly high particle speeds bias fine-level reconstruction",
+            description="How strongly high velocity regions force finer reconstruction. Higher values preserve splashes and thin jets better, but add cost and possible noise",
             min=0.1, max=64.0,
             default=4.0,
             precision=2,
@@ -231,12 +238,104 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
             ); exec(conv("adaptive_phase_field_velocity_refinement_scale"))
     adaptive_phase_field_velocity_band_expansion_scale = FloatProperty(
             name="Adaptive Phase Field Velocity Band Expansion Scale",
-            description="Controls how strongly high particle speeds expand local splat support",
+            description="How strongly fast motion expands local support/band coverage. Higher values reduce under-sampling in fast regions but can widen the interface",
             min=0.1, max=16.0,
             default=1.5,
             precision=2,
             options={'HIDDEN'},
             ); exec(conv("adaptive_phase_field_velocity_band_expansion_scale"))
+    adaptive_phase_field_alpha_phi = FloatProperty(
+            name="Adaptive Phase Field Alpha Phi",
+            description="Compression factor for mapping accumulated phase density to phase value (alpha_phi). Higher values sharpen transitions; lower values soften/blend",
+            min=0.01, max=8.0,
+            default=1.0,
+            precision=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_alpha_phi"))
+    adaptive_phase_field_density_threshold = FloatProperty(
+            name="Adaptive Phase Field Density Threshold",
+            description="Minimum accumulated phase density before activation (rho_min). Higher values suppress low-density noise, but can remove very thin fluid",
+            min=0.0, max=16.0,
+            default=0.0,
+            precision=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_density_threshold"))
+    adaptive_phase_field_variable_density_pressure_projection = BoolProperty(
+            name="Enable Variable-Density Pressure Projection",
+            description="Use phase-field-driven variable-density pressure coefficients (beta = 1/rho). Improves liquid-air coupling near the interface, but can be harder to solve",
+            default=False,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_variable_density_pressure_projection"))
+    adaptive_phase_field_liquid_density = FloatProperty(
+            name="Adaptive Phase Field Liquid Density",
+            description="Liquid density used by variable-density pressure projection. Increasing liquid-to-gas contrast strengthens liquid dominance and interface sharpness",
+            min=0.001, max=100000.0,
+            default=1000.0,
+            precision=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_liquid_density"))
+    adaptive_phase_field_gas_density = FloatProperty(
+            name="Adaptive Phase Field Gas Density",
+            description="Gas density used by variable-density pressure projection. Higher values increase gas inertia and reduce density contrast against liquid",
+            min=0.001, max=100000.0,
+            default=1.0,
+            precision=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_gas_density"))
+    adaptive_phase_field_pressure_air_band_width = IntProperty(
+            name="Adaptive Phase Field Pressure Air Band Width",
+            description="Number of air cells outside the surface included in variable-density pressure solve. Larger bands improve coupling/stability but increase solve time",
+            min=0, max=64,
+            default=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_pressure_air_band_width"))
+    adaptive_phase_field_particle_adaptivity = BoolProperty(
+            name="Enable Adaptive Phase Field Particle Adaptivity",
+            description="Enable marker particle split/coarsen adaptivity from phase-field distance. Keeps detail near the interface while reducing particle count elsewhere",
+            default=False,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_particle_adaptivity"))
+    adaptive_phase_field_particle_max_level = IntProperty(
+            name="Adaptive Phase Field Particle Max Level",
+            description="Maximum coarsening level for adaptive particles away from detail regions. Higher values are faster and lighter, but can lose detail accuracy",
+            min=0, max=8,
+            default=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_particle_max_level"))
+    adaptive_phase_field_particle_coarsen_delay = IntProperty(
+            name="Adaptive Phase Field Particle Coarsen Delay",
+            description="Number of adaptivity passes to wait before coarsening. Higher values reduce split/coarsen flicker but keep more particles longer",
+            min=0, max=64,
+            default=3,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_particle_coarsen_delay"))
+    adaptive_phase_field_particle_min_particles_per_cell = IntProperty(
+            name="Adaptive Phase Field Particle Min Particles Per Cell",
+            description="Minimum marker particles kept per cell during coarsening. Higher values improve stability and transfer quality, but reduce performance gains",
+            min=1, max=128,
+            default=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_particle_min_particles_per_cell"))
+    adaptive_phase_field_two_phase_particles = BoolProperty(
+            name="Enable Adaptive Phase Field Two-Phase Particles",
+            description="Enable explicit liquid and air marker particles with phase/mass-aware transfer. Improves two-phase behavior, but increases memory and runtime",
+            default=False,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_two_phase_particles"))
+    adaptive_phase_field_air_particle_band_width = IntProperty(
+            name="Adaptive Phase Field Air Particle Band Width",
+            description="Air particle maintenance band width outside the interface in cells. Larger values improve two-phase coupling robustness, but add particles",
+            min=0, max=64,
+            default=2,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_air_particle_band_width"))
+    adaptive_phase_field_air_particles_per_cell = IntProperty(
+            name="Adaptive Phase Field Air Particles Per Cell",
+            description="Target air particles per interface-band cell. Higher values reduce transfer noise and stabilize two-phase coupling, but are slower",
+            min=1, max=64,
+            default=1,
+            options={'HIDDEN'},
+            ); exec(conv("adaptive_phase_field_air_particles_per_cell"))
     enable_fracture_optimization = BoolProperty(
             name="Enable Fracture Optimizations",
             description="Enable optimizations when using animated fracture simulations as"
@@ -255,6 +354,12 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
                 " but will use more RAM if enabled",
             default = True,
             ); exec(conv("enable_asynchronous_meshing"))
+    enable_volume_preserving_surface_smoothing = BoolProperty(
+            name="Volume-Preserving Surface Smoothing",
+            description="Use a two-pass smoothing scheme for the reconstructed fluid surface to reduce volume loss"
+                " while still removing high-frequency meshing noise",
+            default=False,
+            ); exec(conv("enable_volume_preserving_surface_smoothing"))
     precompute_static_obstacles = BoolProperty(
             name="Precompute Static Obstacles",
             description="Precompute data for static obstacles. If enabled,"
@@ -305,6 +410,7 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         add(path + ".particle_jitter_factor",                    "Jitter Factor",                      group_id=0)
         add(path + ".jitter_surface_particles",                  "Jitter Surface Particles",           group_id=0)
         add(path + ".pressure_solver_max_iterations",            "Pressure Solver Iterations",         group_id=0)
+        add(path + ".pressure_solver_method",                    "Pressure Solver Method",             group_id=0)
         add(path + ".viscosity_solver_max_iterations",           "Viscosity Solver Iterations",        group_id=0)
         add(path + ".velocity_transfer_method",                  "Velocity Transfer Method",           group_id=0)
         add(path + ".PICFLIP_ratio",                             "PIC/FLIP Ratio",                     group_id=0)
@@ -318,12 +424,26 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         add(path + ".adaptive_phase_field_smoothing_band_layers",   "Adaptive Phase Field Smoothing Band Layers", group_id=0)
         add(path + ".adaptive_phase_field_velocity_refinement_scale","Adaptive Phase Field Velocity Refinement Scale", group_id=0)
         add(path + ".adaptive_phase_field_velocity_band_expansion_scale", "Adaptive Phase Field Velocity Band Expansion Scale", group_id=0)
+        add(path + ".adaptive_phase_field_alpha_phi",              "Adaptive Phase Field Alpha Phi",      group_id=0)
+        add(path + ".adaptive_phase_field_density_threshold",      "Adaptive Phase Field Density Threshold", group_id=0)
+        add(path + ".adaptive_phase_field_variable_density_pressure_projection", "Adaptive Phase Field Variable Density Pressure", group_id=0)
+        add(path + ".adaptive_phase_field_liquid_density",         "Adaptive Phase Field Liquid Density", group_id=0)
+        add(path + ".adaptive_phase_field_gas_density",            "Adaptive Phase Field Gas Density",    group_id=0)
+        add(path + ".adaptive_phase_field_pressure_air_band_width","Adaptive Phase Field Pressure Air Band Width", group_id=0)
+        add(path + ".adaptive_phase_field_particle_adaptivity",    "Adaptive Phase Field Particle Adaptivity", group_id=0)
+        add(path + ".adaptive_phase_field_particle_max_level",     "Adaptive Phase Field Particle Max Level", group_id=0)
+        add(path + ".adaptive_phase_field_particle_coarsen_delay", "Adaptive Phase Field Particle Coarsen Delay", group_id=0)
+        add(path + ".adaptive_phase_field_particle_min_particles_per_cell", "Adaptive Phase Field Particle Min Particles Per Cell", group_id=0)
+        add(path + ".adaptive_phase_field_two_phase_particles",    "Adaptive Phase Field Two-Phase Particles", group_id=0)
+        add(path + ".adaptive_phase_field_air_particle_band_width","Adaptive Phase Field Air Particle Band Width", group_id=0)
+        add(path + ".adaptive_phase_field_air_particles_per_cell", "Adaptive Phase Field Air Particles Per Cell", group_id=0)
         add(path + ".CFL_condition_number",                      "CFL",                                group_id=0)
         add(path + ".enable_extreme_velocity_removal",           "Enable Extreme Velocity Removal",    group_id=0)
         add(path + ".enable_gpu_features",                       "Enable GPU Features",                group_id=1)
         add(path + ".threading_mode",                            "Threading Mode",                     group_id=1)
         add(path + ".num_threads_fixed",                         "Num Threads (fixed)",                group_id=1)
         add(path + ".enable_asynchronous_meshing",               "Async Meshing",                      group_id=1)
+        add(path + ".enable_volume_preserving_surface_smoothing","Volume Preserving Surface Smoothing", group_id=1)
         add(path + ".enable_fracture_optimization",              "Enable Fracture Optimization",        group_id=1)
         add(path + ".precompute_static_obstacles",               "Precompute Static Obstacles",        group_id=1)
         add(path + ".reserve_temporary_grids",                   "Reserve Temporary Grid Memory",      group_id=1)
@@ -336,6 +456,7 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
 
     def load_post(self):
         self.initialize_num_threads_auto_detect()
+        self._sanitize_legacy_enum_values()
         
 
     def initialize_num_threads_auto_detect(self):
@@ -343,6 +464,34 @@ class DomainAdvancedProperties(bpy.types.PropertyGroup):
         bpy.context.scene.render.threads_mode = 'AUTO'
         self.num_threads_auto_detect = bpy.context.scene.render.threads
         bpy.context.scene.render.threads_mode = original_threads_mode
+
+
+    def _sanitize_legacy_enum_values(self):
+        # Legacy scenes may store enum backing values instead of enum identifiers.
+        # Normalize these values so UI/bake paths do not hit invalid enum warnings.
+        velocity_value = self.get("velocity_transfer_method", None)
+        velocity_map = {
+            1: 'VELOCITY_TRANSFER_METHOD_FLIP',
+            "1": 'VELOCITY_TRANSFER_METHOD_FLIP',
+            2: 'VELOCITY_TRANSFER_METHOD_APIC',
+            "2": 'VELOCITY_TRANSFER_METHOD_APIC',
+        }
+        normalized_velocity = velocity_map.get(velocity_value)
+        if normalized_velocity is not None:
+            self.velocity_transfer_method = normalized_velocity
+
+        pressure_value = self.get("pressure_solver_method", None)
+        pressure_map = {
+            0: 'PRESSURE_SOLVER_METHOD_PCG',
+            "0": 'PRESSURE_SOLVER_METHOD_PCG',
+            1: 'PRESSURE_SOLVER_METHOD_FPCG',
+            "1": 'PRESSURE_SOLVER_METHOD_FPCG',
+            2: 'PRESSURE_SOLVER_METHOD_AMG_FPCG',
+            "2": 'PRESSURE_SOLVER_METHOD_AMG_FPCG',
+        }
+        normalized_pressure = pressure_map.get(pressure_value)
+        if normalized_pressure is not None:
+            self.pressure_solver_method = normalized_pressure
 
 
     def _update_min_time_steps_per_frame(self, context):

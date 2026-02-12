@@ -116,6 +116,32 @@ void MultiresolutionSparseBlockGrid::setHierarchyMin(int i, int j, int k, float 
     }
 }
 
+void MultiresolutionSparseBlockGrid::setHierarchyAdd(int i, int j, int k, float value) {
+    setHierarchyAdd(i, j, k, value, (int)_gridLevels.size());
+}
+
+void MultiresolutionSparseBlockGrid::setHierarchyAdd(int i, int j, int k, float value, int levelsToWrite) {
+    if (_gridLevels.empty() || !_isPointInRange(i, j, k)) {
+        return;
+    }
+
+    int maxLevel = std::max(1, std::min(levelsToWrite, (int)_gridLevels.size()));
+    for (int level = 0; level < maxLevel; level++) {
+        GridLevel &gridLevel = _gridLevels[level];
+        BlockKey key = _getBlockKey(i, j, k, level);
+
+        auto blockIt = gridLevel.blocks.find(key);
+        if (blockIt == gridLevel.blocks.end()) {
+            blockIt = gridLevel.blocks.emplace(key,
+                                               BlockData(gridLevel.blockWidth, gridLevel.fillValue)).first;
+        }
+
+        GridIndex localIndex = _getLocalGridIndex(i, j, k, level);
+        float current = blockIt->second.values(localIndex);
+        blockIt->second.values.set(localIndex, current + value);
+    }
+}
+
 float MultiresolutionSparseBlockGrid::sampleFine(int i, int j, int k) {
     if (_gridLevels.empty() || !_isPointInRange(i, j, k)) {
         return 0.0f;
