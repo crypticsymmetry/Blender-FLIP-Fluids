@@ -177,7 +177,7 @@ private:
     }
 
     template <typename T>
-    T _clamp(const T& n, const T& lower, const T& upper) {
+    T _clamp(const T& n, const T& lower, const T& upper) const {
       return std::max(lower, std::min(n, upper));
     }
 
@@ -221,6 +221,9 @@ private:
 
     void _initializeBetaField();
     float _getPhaseValue(int i, int j, int k) const;
+    bool _isVariableDensityLiquidCell(int i, int j, int k) const;
+    float _getVariableDensitySignedDistance(int i, int j, int k) const;
+    double _computeVariableDensityLiquidTheta(double phiLiquid, double phiAir) const;
 
     struct AMGLevel {
         SparseMatrixd matrix;
@@ -229,6 +232,8 @@ private:
         std::vector<int> fineToCoarse;
         std::vector<std::vector<int> > coarseToFine;
         std::vector<GridIndex> coordinates;
+        std::vector<unsigned char> phaseTags;
+        std::vector<unsigned char> solidTags;
     };
     bool _buildAMGHierarchy(SparseMatrixd &matrix, std::vector<AMGLevel> *hierarchy);
     bool _buildCoarseAMGLevel(AMGLevel *fineLevel, AMGLevel *coarseLevel);
@@ -239,6 +244,8 @@ private:
                                       const std::vector<double> &rhs, std::vector<double> *out);
     void _smoothJacobi(const AMGLevel &level, const std::vector<double> &rhs,
                        std::vector<double> *x, int iterations);
+    void _smoothRBGS(const AMGLevel &level, const std::vector<double> &rhs,
+                     std::vector<double> *x, int iterations);
     void _restrictResidual(const AMGLevel &fineLevel, const std::vector<double> &fineResidual,
                            std::vector<double> *coarseResidual);
     void _prolongateCorrection(const AMGLevel &fineLevel, const std::vector<double> &coarseCorrection,
@@ -282,6 +289,7 @@ private:
     double _liquidDensity = 1000.0;
     double _gasDensity = 1.0;
     int _pressureAirBandWidthCells = 3;
+    bool _isAirBandPressureSolveEnabled = false;
     PressureSolverBackend _solverBackend = PressureSolverBackend::PCG;
     PressureSolverBackend _requestedSolverBackend = PressureSolverBackend::PCG;
     PressureSolverBackend _usedSolverBackend = PressureSolverBackend::PCG;

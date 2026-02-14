@@ -430,6 +430,20 @@ public:
     void enableSurfaceVolumePreservingSmoothing();
     void disableSurfaceVolumePreservingSmoothing();
     bool isSurfaceVolumePreservingSmoothingEnabled();
+    void enableSurfaceTemporalSmoothing();
+    void disableSurfaceTemporalSmoothing();
+    bool isSurfaceTemporalSmoothingEnabled();
+    double getSurfaceTemporalSmoothingStrength();
+    void setSurfaceTemporalSmoothingStrength(double s);
+    double getSurfaceTemporalSmoothingRadius();
+    void setSurfaceTemporalSmoothingRadius(double r);
+    void enableSurfaceThinSheetAnisotropy();
+    void disableSurfaceThinSheetAnisotropy();
+    bool isSurfaceThinSheetAnisotropyEnabled();
+    double getSurfaceThinSheetAnisotropyStrength();
+    void setSurfaceThinSheetAnisotropyStrength(double s);
+    double getSurfaceThinSheetAnisotropyBandWidth();
+    void setSurfaceThinSheetAnisotropyBandWidth(double w);
 
     /*
         If set, only fluid inside of this object will be meshed
@@ -855,6 +869,14 @@ public:
     void setMinDiffuseTurbulence(double e);
     double getMaxDiffuseTurbulence();
     void setMaxDiffuseTurbulence(double e);
+    double getMinDiffuseVorticity();
+    void setMinDiffuseVorticity(double v);
+    double getMaxDiffuseVorticity();
+    void setMaxDiffuseVorticity(double v);
+    double getMinDiffuseSurfaceImpactSpeed();
+    void setMinDiffuseSurfaceImpactSpeed(double s);
+    double getMaxDiffuseSurfaceImpactSpeed();
+    void setMaxDiffuseSurfaceImpactSpeed(double s);
 
     /*
         The number of diffuse particles simulated in the diffuse particle
@@ -897,6 +919,20 @@ public:
     void setSprayParticleLifetimeModifier(double modifier);
     double getDustParticleLifetimeModifier();
     void setDustParticleLifetimeModifier(double modifier);
+    double getDiffusePhaseResponseBandSize();
+    void setDiffusePhaseResponseBandSize(double cells);
+    double getDiffuseFoamLayerLifetimeBoost();
+    void setDiffuseFoamLayerLifetimeBoost(double v);
+    double getDiffuseBubbleDepthLifetimeBoost();
+    void setDiffuseBubbleDepthLifetimeBoost(double v);
+    double getDiffuseSprayAirLifetimeBoost();
+    void setDiffuseSprayAirLifetimeBoost(double v);
+    double getDiffuseFoamLayerAdvectionBoost();
+    void setDiffuseFoamLayerAdvectionBoost(double v);
+    double getDiffuseBubbleDepthDragBoost();
+    void setDiffuseBubbleDepthDragBoost(double v);
+    double getDiffuseSprayAirDragBoost();
+    void setDiffuseSprayAirDragBoost(double v);
 
     /*
         Diffuse particle emission rates.
@@ -926,6 +962,10 @@ public:
     void setDiffuseParticleWavecrestEmissionRate(double r);
     double getDiffuseParticleTurbulenceEmissionRate();
     void setDiffuseParticleTurbulenceEmissionRate(double r);
+    double getDiffuseParticleVorticityEmissionRate();
+    void setDiffuseParticleVorticityEmissionRate(double r);
+    double getDiffuseParticleImpactEmissionRate();
+    void setDiffuseParticleImpactEmissionRate(double r);
     double getDiffuseParticleDustEmissionRate();
     void setDiffuseParticleDustEmissionRate(double r);
     int getDiffuseMaxEmissionParticlesPerEmitter();
@@ -1242,6 +1282,14 @@ public:
     void setPICFLIPRatio(double r);
     double getPICAPICRatio();
     void setPICAPICRatio(double r);
+    double getAdaptivePhaseFieldLiquidPICFLIPRatio();
+    void setAdaptivePhaseFieldLiquidPICFLIPRatio(double r);
+    double getAdaptivePhaseFieldGasPICFLIPRatio();
+    void setAdaptivePhaseFieldGasPICFLIPRatio(double r);
+    double getAdaptivePhaseFieldLiquidPICAPICRatio();
+    void setAdaptivePhaseFieldLiquidPICAPICRatio(double r);
+    double getAdaptivePhaseFieldGasPICAPICRatio();
+    void setAdaptivePhaseFieldGasPICAPICRatio(double r);
 
     /*
         Enable/Disable experimental adaptive phase field level set using
@@ -1291,6 +1339,10 @@ public:
     void enableAdaptivePhaseFieldTwoPhaseParticles();
     void disableAdaptivePhaseFieldTwoPhaseParticles();
     bool isAdaptivePhaseFieldTwoPhaseParticlesEnabled();
+    float getAdaptivePhaseFieldLiquidViscosityScale();
+    void setAdaptivePhaseFieldLiquidViscosityScale(float s);
+    float getAdaptivePhaseFieldGasViscosityScale();
+    void setAdaptivePhaseFieldGasViscosityScale(float s);
     int getAdaptivePhaseFieldAirParticleBandWidth();
     void setAdaptivePhaseFieldAirParticleBandWidth(int n);
     int getAdaptivePhaseFieldAirParticlesPerCell();
@@ -2001,6 +2053,7 @@ private:
     vmath::vec3 _HSVToRGB(vmath::vec3 in);
     void _updateMarkerParticleColorAttributeMixingThread(int startidx, int endidx, double dt,
                                                          SpatialPointGrid *pointGrid,
+                                                         std::vector<int> *phases,
                                                          std::vector<vmath::vec3> *colors,
                                                          std::vector<vmath::vec3> *colorsNew,
                                                          std::vector<bool> *colorsNewValid);
@@ -2027,7 +2080,7 @@ private:
     void _updateAdaptivePhaseFieldParticleAdaptivity();
     void _updateAdaptivePhaseFieldAirParticles();
     void _rebuildAdaptivePhaseFieldPhaseGridFromTwoPhaseParticles(double particleRadius);
-    int _getAdaptivePhaseFieldTargetParticleLevel(float signedDistance) const;
+    int _getAdaptivePhaseFieldTargetParticleLevel(float signedDistance, int currentLevel = -1) const;
     vmath::vec3 _getAdaptivePhaseFieldSplitOffset(int childIndex, float baseOffset, float jitterAmount);
 
     /*
@@ -2088,6 +2141,7 @@ private:
     void _generateSurfaceSourceIDAttributeData(TriangleMesh &surface, std::vector<vmath::vec3> &positions, std::vector<int> *sourceID);
     void _generateSurfaceViscosityAttributeData(TriangleMesh &surface);
     void _outputSurfaceMeshThread(std::vector<vmath::vec3> *particles,
+                                  std::vector<float> *particleRadiusScales,
                                   MeshLevelSet *solidSDF,
                                   MACVelocityField *vfield,
                                   std::vector<int> *sourceID);
@@ -2159,11 +2213,14 @@ private:
                                         std::vector<float> &binSpeeds, 
                                         std::vector<char> &outdata);
     void _smoothSurfaceMesh(TriangleMesh &mesh);
+    void _stabilizeSurfaceMeshTemporal(TriangleMesh &mesh,
+                                       std::vector<vmath::vec3> &previousVertices);
     void _invertContactNormals(TriangleMesh &mesh);
     void _removeMeshNearDomain(TriangleMesh &mesh);
     void _computeDomainBoundarySDF(MeshLevelSet *sdf);
     void _generateOutputSurface(TriangleMesh &surface, TriangleMesh &preview,
                                   std::vector<vmath::vec3> *particles,
+                                  std::vector<float> *particleRadiusScales,
                                   MeshLevelSet *soldSDF);
     void _outputSimulationLogFile();
 
@@ -2307,6 +2364,8 @@ private:
     double _liquidSDFParticleRadius = 0.0;
     double _liquidSDFSurfaceTensionParticleScale = 2.0;
     bool _isAdaptivePhaseFieldLevelSetEnabled = false;
+    int _adaptivePhaseFieldConfiguredSparseBlockSize = -1;
+    int _adaptivePhaseFieldConfiguredLevels = -1;
     int _adaptivePhaseFieldSparseBlockSize = 16;
     int _adaptivePhaseFieldLevels = 3;
     float _adaptivePhaseFieldFarDistance = 3.0f;
@@ -2328,7 +2387,9 @@ private:
     float _adaptivePhaseFieldParticleLevelBandwidth = 2.0f;
     float _adaptivePhaseFieldParticleSplitJitter = 0.2f;
     bool _isAdaptivePhaseFieldTwoPhaseParticlesEnabled = false;
-    int _adaptivePhaseFieldAirParticleBandWidth = 2;
+    float _adaptivePhaseFieldLiquidViscosityScale = 1.0f;
+    float _adaptivePhaseFieldGasViscosityScale = 1.0f;
+    int _adaptivePhaseFieldAirParticleBandWidth = 1;
     int _adaptivePhaseFieldAirParticlesPerCell = 1;
     std::thread _updateLiquidLevelSetThread;
 
@@ -2411,6 +2472,14 @@ private:
     double _surfaceReconstructionSmoothingValue = 0.5;
     int _surfaceReconstructionSmoothingIterations = 2;
     bool _isSurfaceVolumePreservingSmoothingEnabled = false;
+    bool _isSurfaceTemporalSmoothingEnabled = false;
+    double _surfaceTemporalSmoothingStrength = 0.15;
+    double _surfaceTemporalSmoothingRadius = 1.5;
+    bool _isSurfaceThinSheetAnisotropyEnabled = false;
+    double _surfaceThinSheetAnisotropyStrength = 0.35;
+    double _surfaceThinSheetAnisotropyBandWidth = 2.0;
+    std::vector<vmath::vec3> _surfaceTemporalSmoothingPreviousVertices;
+    std::vector<vmath::vec3> _previewSurfaceTemporalSmoothingPreviousVertices;
     int _minimumSurfacePolyhedronTriangleCount = 0;
     double _markerParticleRadius = 0.0;
     double _markerParticleScale = 3.0;
@@ -2498,6 +2567,10 @@ private:
     int _maxParticlesPerPICFLIPUpdate = 10e6;
     double _ratioPICFLIP = 0.05;
     double _ratioPICAPIC = 0.00;
+    double _adaptivePhaseFieldLiquidPICFLIPRatio = 0.05;
+    double _adaptivePhaseFieldGasPICFLIPRatio = 0.85;
+    double _adaptivePhaseFieldLiquidPICAPICRatio = 0.00;
+    double _adaptivePhaseFieldGasPICAPICRatio = 1.00;
     MACVelocityField _MACVelocity;
     MACVelocityField _savedVelocityField;
 

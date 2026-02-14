@@ -513,6 +513,112 @@ bool FluidSimulation::isSurfaceVolumePreservingSmoothingEnabled() {
     return _isSurfaceVolumePreservingSmoothingEnabled;
 }
 
+void FluidSimulation::enableSurfaceTemporalSmoothing() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " enableSurfaceTemporalSmoothing" << std::endl);
+
+    _isSurfaceTemporalSmoothingEnabled = true;
+}
+
+void FluidSimulation::disableSurfaceTemporalSmoothing() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " disableSurfaceTemporalSmoothing" << std::endl);
+
+    _isSurfaceTemporalSmoothingEnabled = false;
+    _surfaceTemporalSmoothingPreviousVertices.clear();
+    _previewSurfaceTemporalSmoothingPreviousVertices.clear();
+}
+
+bool FluidSimulation::isSurfaceTemporalSmoothingEnabled() {
+    return _isSurfaceTemporalSmoothingEnabled;
+}
+
+double FluidSimulation::getSurfaceTemporalSmoothingStrength() {
+    return _surfaceTemporalSmoothingStrength;
+}
+
+void FluidSimulation::setSurfaceTemporalSmoothingStrength(double s) {
+    if (s < 0.0 || s > 1.0) {
+        std::string msg = "Error: temporal surface smoothing strength must be in range [0.0, 1.0].\n";
+        msg += "strength: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setSurfaceTemporalSmoothingStrength: " << s << std::endl);
+
+    _surfaceTemporalSmoothingStrength = s;
+}
+
+double FluidSimulation::getSurfaceTemporalSmoothingRadius() {
+    return _surfaceTemporalSmoothingRadius;
+}
+
+void FluidSimulation::setSurfaceTemporalSmoothingRadius(double r) {
+    if (r < 0.0) {
+        std::string msg = "Error: temporal surface smoothing radius must be greater than or equal to 0.0.\n";
+        msg += "radius: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setSurfaceTemporalSmoothingRadius: " << r << std::endl);
+
+    _surfaceTemporalSmoothingRadius = r;
+}
+
+void FluidSimulation::enableSurfaceThinSheetAnisotropy() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " enableSurfaceThinSheetAnisotropy" << std::endl);
+
+    _isSurfaceThinSheetAnisotropyEnabled = true;
+}
+
+void FluidSimulation::disableSurfaceThinSheetAnisotropy() {
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " disableSurfaceThinSheetAnisotropy" << std::endl);
+
+    _isSurfaceThinSheetAnisotropyEnabled = false;
+}
+
+bool FluidSimulation::isSurfaceThinSheetAnisotropyEnabled() {
+    return _isSurfaceThinSheetAnisotropyEnabled;
+}
+
+double FluidSimulation::getSurfaceThinSheetAnisotropyStrength() {
+    return _surfaceThinSheetAnisotropyStrength;
+}
+
+void FluidSimulation::setSurfaceThinSheetAnisotropyStrength(double s) {
+    if (s < 0.0 || s > 1.0) {
+        std::string msg = "Error: thin-sheet anisotropy strength must be in range [0.0, 1.0].\n";
+        msg += "strength: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setSurfaceThinSheetAnisotropyStrength: " << s << std::endl);
+
+    _surfaceThinSheetAnisotropyStrength = s;
+}
+
+double FluidSimulation::getSurfaceThinSheetAnisotropyBandWidth() {
+    return _surfaceThinSheetAnisotropyBandWidth;
+}
+
+void FluidSimulation::setSurfaceThinSheetAnisotropyBandWidth(double w) {
+    if (w < 0.0) {
+        std::string msg = "Error: thin-sheet anisotropy band width must be greater than or equal to 0.0.\n";
+        msg += "band width: " + _toString(w) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setSurfaceThinSheetAnisotropyBandWidth: " << w << std::endl);
+
+    _surfaceThinSheetAnisotropyBandWidth = w;
+}
+
 void FluidSimulation::setMeshingVolume(MeshObject *volumeObject) {
     _logfile.log(std::ostringstream().flush() << 
                  _logfile.getTime() << " setMeshingVolume: " << volumeObject << std::endl);
@@ -611,6 +717,8 @@ void FluidSimulation::disableSurfaceReconstruction() {
                  _logfile.getTime() << " disableSurfaceReconstruction" << std::endl);
 
     _isSurfaceMeshReconstructionEnabled = false;
+    _surfaceTemporalSmoothingPreviousVertices.clear();
+    _previewSurfaceTemporalSmoothingPreviousVertices.clear();
 }
 
 bool FluidSimulation::isSurfaceReconstructionEnabled() {
@@ -1752,6 +1860,74 @@ void FluidSimulation::setMaxDiffuseTurbulence(double t) {
     _diffuseMaterial.setMaxTurbulence(t);
 }
 
+double FluidSimulation::getMinDiffuseVorticity() {
+    return _diffuseMaterial.getMinVorticity();
+}
+
+void FluidSimulation::setMinDiffuseVorticity(double v) {
+    if (v < 0) {
+        std::string msg = "Error: min diffuse vorticity must be greater than or equal to 0.\n";
+        msg += "vorticity: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMinDiffuseVorticity: " << v << std::endl);
+
+    _diffuseMaterial.setMinVorticity(v);
+}
+
+double FluidSimulation::getMaxDiffuseVorticity() {
+    return _diffuseMaterial.getMaxVorticity();
+}
+
+void FluidSimulation::setMaxDiffuseVorticity(double v) {
+    if (v < 0) {
+        std::string msg = "Error: max diffuse vorticity must be greater than or equal to 0.\n";
+        msg += "vorticity: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMaxDiffuseVorticity: " << v << std::endl);
+
+    _diffuseMaterial.setMaxVorticity(v);
+}
+
+double FluidSimulation::getMinDiffuseSurfaceImpactSpeed() {
+    return _diffuseMaterial.getMinSurfaceImpactSpeed();
+}
+
+void FluidSimulation::setMinDiffuseSurfaceImpactSpeed(double s) {
+    if (s < 0) {
+        std::string msg = "Error: min diffuse surface impact speed must be greater than or equal to 0.\n";
+        msg += "speed: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMinDiffuseSurfaceImpactSpeed: " << s << std::endl);
+
+    _diffuseMaterial.setMinSurfaceImpactSpeed(s);
+}
+
+double FluidSimulation::getMaxDiffuseSurfaceImpactSpeed() {
+    return _diffuseMaterial.getMaxSurfaceImpactSpeed();
+}
+
+void FluidSimulation::setMaxDiffuseSurfaceImpactSpeed(double s) {
+    if (s < 0) {
+        std::string msg = "Error: max diffuse surface impact speed must be greater than or equal to 0.\n";
+        msg += "speed: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setMaxDiffuseSurfaceImpactSpeed: " << s << std::endl);
+
+    _diffuseMaterial.setMaxSurfaceImpactSpeed(s);
+}
+
 int FluidSimulation::getMaxNumDiffuseParticles() {
     return _diffuseMaterial.getMaxNumDiffuseParticles();
 }
@@ -1901,6 +2077,125 @@ void FluidSimulation::setDustParticleLifetimeModifier(double modifier) {
     _diffuseMaterial.setDustParticleLifetimeModifier(modifier);
 }
 
+double FluidSimulation::getDiffusePhaseResponseBandSize() {
+    return _diffuseMaterial.getPhaseResponseBandSize();
+}
+
+void FluidSimulation::setDiffusePhaseResponseBandSize(double cells) {
+    if (cells < 0.0) {
+        std::string msg = "Error: diffuse phase response band size must be greater than or equal to 0.\n";
+        msg += "cells: " + _toString(cells) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffusePhaseResponseBandSize: " << cells << std::endl);
+
+    _diffuseMaterial.setPhaseResponseBandSize(cells);
+}
+
+double FluidSimulation::getDiffuseFoamLayerLifetimeBoost() {
+    return _diffuseMaterial.getFoamLayerLifetimeBoost();
+}
+
+void FluidSimulation::setDiffuseFoamLayerLifetimeBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse foam layer lifetime boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseFoamLayerLifetimeBoost: " << v << std::endl);
+
+    _diffuseMaterial.setFoamLayerLifetimeBoost(v);
+}
+
+double FluidSimulation::getDiffuseBubbleDepthLifetimeBoost() {
+    return _diffuseMaterial.getBubbleDepthLifetimeBoost();
+}
+
+void FluidSimulation::setDiffuseBubbleDepthLifetimeBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse bubble depth lifetime boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseBubbleDepthLifetimeBoost: " << v << std::endl);
+
+    _diffuseMaterial.setBubbleDepthLifetimeBoost(v);
+}
+
+double FluidSimulation::getDiffuseSprayAirLifetimeBoost() {
+    return _diffuseMaterial.getSprayAirLifetimeBoost();
+}
+
+void FluidSimulation::setDiffuseSprayAirLifetimeBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse spray air lifetime boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseSprayAirLifetimeBoost: " << v << std::endl);
+
+    _diffuseMaterial.setSprayAirLifetimeBoost(v);
+}
+
+double FluidSimulation::getDiffuseFoamLayerAdvectionBoost() {
+    return _diffuseMaterial.getFoamLayerAdvectionBoost();
+}
+
+void FluidSimulation::setDiffuseFoamLayerAdvectionBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse foam layer advection boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseFoamLayerAdvectionBoost: " << v << std::endl);
+
+    _diffuseMaterial.setFoamLayerAdvectionBoost(v);
+}
+
+double FluidSimulation::getDiffuseBubbleDepthDragBoost() {
+    return _diffuseMaterial.getBubbleDepthDragBoost();
+}
+
+void FluidSimulation::setDiffuseBubbleDepthDragBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse bubble depth drag boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseBubbleDepthDragBoost: " << v << std::endl);
+
+    _diffuseMaterial.setBubbleDepthDragBoost(v);
+}
+
+double FluidSimulation::getDiffuseSprayAirDragBoost() {
+    return _diffuseMaterial.getSprayAirDragBoost();
+}
+
+void FluidSimulation::setDiffuseSprayAirDragBoost(double v) {
+    if (v < 0.0) {
+        std::string msg = "Error: diffuse spray air drag boost must be greater than or equal to 0.\n";
+        msg += "value: " + _toString(v) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseSprayAirDragBoost: " << v << std::endl);
+
+    _diffuseMaterial.setSprayAirDragBoost(v);
+}
+
 double FluidSimulation::getDiffuseParticleWavecrestEmissionRate() {
     return _diffuseMaterial.getDiffuseParticleWavecrestEmissionRate();
 }
@@ -1933,6 +2228,40 @@ void FluidSimulation::setDiffuseParticleTurbulenceEmissionRate(double r) {
                  _logfile.getTime() << " setDiffuseParticleTurbulenceEmissionRate: " << r << std::endl);
 
     _diffuseMaterial.setDiffuseParticleTurbulenceEmissionRate(r);
+}
+
+double FluidSimulation::getDiffuseParticleVorticityEmissionRate() {
+    return _diffuseMaterial.getDiffuseParticleVorticityEmissionRate();
+}
+
+void FluidSimulation::setDiffuseParticleVorticityEmissionRate(double r) {
+    if (r < 0) {
+        std::string msg = "Error: vorticity emission rate must be greater than or equal to 0.\n";
+        msg += "rate: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseParticleVorticityEmissionRate: " << r << std::endl);
+
+    _diffuseMaterial.setDiffuseParticleVorticityEmissionRate(r);
+}
+
+double FluidSimulation::getDiffuseParticleImpactEmissionRate() {
+    return _diffuseMaterial.getDiffuseParticleImpactEmissionRate();
+}
+
+void FluidSimulation::setDiffuseParticleImpactEmissionRate(double r) {
+    if (r < 0) {
+        std::string msg = "Error: impact emission rate must be greater than or equal to 0.\n";
+        msg += "rate: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setDiffuseParticleImpactEmissionRate: " << r << std::endl);
+
+    _diffuseMaterial.setDiffuseParticleImpactEmissionRate(r);
 }
 
 double FluidSimulation::getDiffuseParticleDustEmissionRate() {
@@ -2908,6 +3237,78 @@ void FluidSimulation::setPICAPICRatio(double r) {
     _ratioPICAPIC = r;
 }
 
+double FluidSimulation::getAdaptivePhaseFieldLiquidPICFLIPRatio() {
+    return _adaptivePhaseFieldLiquidPICFLIPRatio;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldLiquidPICFLIPRatio(double r) {
+    if (r < 0.0 || r > 1.0) {
+        std::string msg = "Error: adaptive phase field liquid PICFLIP ratio must be in range [0.0, 1.0].\n";
+        msg += "ratio: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldLiquidPICFLIPRatio: " << r << std::endl);
+
+    _adaptivePhaseFieldLiquidPICFLIPRatio = r;
+}
+
+double FluidSimulation::getAdaptivePhaseFieldGasPICFLIPRatio() {
+    return _adaptivePhaseFieldGasPICFLIPRatio;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldGasPICFLIPRatio(double r) {
+    if (r < 0.0 || r > 1.0) {
+        std::string msg = "Error: adaptive phase field gas PICFLIP ratio must be in range [0.0, 1.0].\n";
+        msg += "ratio: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldGasPICFLIPRatio: " << r << std::endl);
+
+    _adaptivePhaseFieldGasPICFLIPRatio = r;
+}
+
+double FluidSimulation::getAdaptivePhaseFieldLiquidPICAPICRatio() {
+    return _adaptivePhaseFieldLiquidPICAPICRatio;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldLiquidPICAPICRatio(double r) {
+    if (r < 0.0 || r > 1.0) {
+        std::string msg = "Error: adaptive phase field liquid PICAPIC ratio must be in range [0.0, 1.0].\n";
+        msg += "ratio: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldLiquidPICAPICRatio: " << r << std::endl);
+
+    _adaptivePhaseFieldLiquidPICAPICRatio = r;
+}
+
+double FluidSimulation::getAdaptivePhaseFieldGasPICAPICRatio() {
+    return _adaptivePhaseFieldGasPICAPICRatio;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldGasPICAPICRatio(double r) {
+    if (r < 0.0 || r > 1.0) {
+        std::string msg = "Error: adaptive phase field gas PICAPIC ratio must be in range [0.0, 1.0].\n";
+        msg += "ratio: " + _toString(r) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() <<
+                 " setAdaptivePhaseFieldGasPICAPICRatio: " << r << std::endl);
+
+    _adaptivePhaseFieldGasPICAPICRatio = r;
+}
+
 
 void FluidSimulation::enableAdaptivePhaseFieldLevelSet() {
     _logfile.log(std::ostringstream().flush() << 
@@ -3262,6 +3663,40 @@ void FluidSimulation::disableAdaptivePhaseFieldTwoPhaseParticles() {
 
 bool FluidSimulation::isAdaptivePhaseFieldTwoPhaseParticlesEnabled() {
     return _isAdaptivePhaseFieldTwoPhaseParticlesEnabled;
+}
+
+float FluidSimulation::getAdaptivePhaseFieldLiquidViscosityScale() {
+    return _adaptivePhaseFieldLiquidViscosityScale;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldLiquidViscosityScale(float s) {
+    if (s < 0.0f || s > 64.0f) {
+        std::string msg = "Error: adaptive phase field liquid viscosity scale must be in range [0.0, 64.0].\n";
+        msg += "liquid viscosity scale: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setAdaptivePhaseFieldLiquidViscosityScale: " << s << std::endl);
+
+    _adaptivePhaseFieldLiquidViscosityScale = s;
+}
+
+float FluidSimulation::getAdaptivePhaseFieldGasViscosityScale() {
+    return _adaptivePhaseFieldGasViscosityScale;
+}
+
+void FluidSimulation::setAdaptivePhaseFieldGasViscosityScale(float s) {
+    if (s < 0.0f || s > 64.0f) {
+        std::string msg = "Error: adaptive phase field gas viscosity scale must be in range [0.0, 64.0].\n";
+        msg += "gas viscosity scale: " + _toString(s) + "\n";
+        throw std::domain_error(msg);
+    }
+
+    _logfile.log(std::ostringstream().flush() <<
+                 _logfile.getTime() << " setAdaptivePhaseFieldGasViscosityScale: " << s << std::endl);
+
+    _adaptivePhaseFieldGasViscosityScale = s;
 }
 
 int FluidSimulation::getAdaptivePhaseFieldAirParticleBandWidth() {
@@ -4542,6 +4977,8 @@ void FluidSimulation::_initializeSimulationGrids(int isize, int jsize, int ksize
     _phaseFieldGrid = Array3d<float>(isize, jsize, ksize, 0.0f);
     _adaptivePhaseField = AdaptivePhaseField(isize, jsize, ksize, dx);
     _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+    _adaptivePhaseFieldConfiguredSparseBlockSize = _adaptivePhaseFieldSparseBlockSize;
+    _adaptivePhaseFieldConfiguredLevels = _adaptivePhaseFieldLevels;
     _adaptivePhaseField.setParameters(_adaptivePhaseFieldFarDistance,
                                       _adaptivePhaseFieldSmoothingIterations,
                                       _adaptivePhaseFieldSmoothingTimeStep,
@@ -5984,23 +6421,38 @@ void FluidSimulation::_updateLiquidLevelSet() {
         std::vector<vmath::vec3> *positions;
         std::vector<vmath::vec3> *velocities;
         std::vector<int> *phases;
+        std::vector<int> *levels = nullptr;
         _markerParticles.getAttributeValues("POSITION", positions);
         _markerParticles.getAttributeValues("VELOCITY", velocities);
         _markerParticles.getAttributeValues("PHASE", phases);
+        ParticleSystemAttribute levelAttribute = _markerParticles.getAttribute("APF_LEVEL");
+        bool hasAdaptiveLevels = levelAttribute.type == AttributeDataType::INT;
+        if (hasAdaptiveLevels) {
+            _markerParticles.getAttributeValues("APF_LEVEL", levels);
+            hasAdaptiveLevels = levels->size() == positions->size();
+        }
 
         std::vector<vmath::vec3> liquidPositions;
         std::vector<vmath::vec3> liquidVelocities;
+        std::vector<int> liquidLevels;
         liquidPositions.reserve(positions->size());
         liquidVelocities.reserve(velocities->size());
+        liquidLevels.reserve(positions->size());
         for (size_t i = 0; i < positions->size(); i++) {
             if (phases->at(i) == (int)MarkerParticlePhase::liquid) {
                 liquidPositions.push_back(positions->at(i));
                 liquidVelocities.push_back(velocities->at(i));
+                liquidLevels.push_back(hasAdaptiveLevels ? levels->at(i) : 0);
             }
         }
 
         if (_isAdaptivePhaseFieldLevelSetEnabled) {
-            _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+            if (_adaptivePhaseFieldConfiguredSparseBlockSize != _adaptivePhaseFieldSparseBlockSize ||
+                    _adaptivePhaseFieldConfiguredLevels != _adaptivePhaseFieldLevels) {
+                _adaptivePhaseField.configureSparseGrid(_adaptivePhaseFieldSparseBlockSize, _adaptivePhaseFieldLevels);
+                _adaptivePhaseFieldConfiguredSparseBlockSize = _adaptivePhaseFieldSparseBlockSize;
+                _adaptivePhaseFieldConfiguredLevels = _adaptivePhaseFieldLevels;
+            }
             _adaptivePhaseField.setParameters(_adaptivePhaseFieldFarDistance,
                                               _adaptivePhaseFieldSmoothingIterations,
                                               _adaptivePhaseFieldSmoothingTimeStep,
@@ -6009,7 +6461,7 @@ void FluidSimulation::_updateLiquidLevelSet() {
                                               _adaptivePhaseFieldVelocityBandExpansionScale,
                                               _adaptivePhaseFieldAlphaPhi,
                                               _adaptivePhaseFieldDensityThreshold);
-            _adaptivePhaseField.rebuildFromParticles(liquidPositions, &liquidVelocities, radius, _currentFrameDeltaTime);
+            _adaptivePhaseField.rebuildFromParticles(liquidPositions, &liquidVelocities, radius, _currentFrameDeltaTime, &liquidLevels);
             _adaptivePhaseField.sampleIntoDenseGrid(*_liquidSDF.getPhiGrid(), &_phaseFieldGrid);
         } else {
             ParticleSystem liquidParticles;
@@ -6440,11 +6892,36 @@ void FluidSimulation::_applyViscosityToVelocityField(double dt) {
         std::vector<float> *viscosities;
         _markerParticles.getAttributeValues("POSITION", positions);
         _markerParticles.getAttributeValues("VISCOSITY", viscosities);
+        std::vector<vmath::vec3> filteredPositions;
+        std::vector<float> filteredViscosities;
+        std::vector<vmath::vec3> *transferPositions = positions;
+        std::vector<float> *transferViscosities = viscosities;
+        if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+            ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+            if (phaseAttribute.type == AttributeDataType::INT) {
+                std::vector<int> *phases;
+                _markerParticles.getAttributeValues("PHASE", phases);
+                filteredPositions.reserve(positions->size());
+                filteredViscosities.reserve(viscosities->size());
+                for (size_t i = 0; i < positions->size(); i++) {
+                    if (phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                        continue;
+                    }
+                    filteredPositions.push_back(positions->at(i));
+                    filteredViscosities.push_back(viscosities->at(i));
+                }
+                transferPositions = &filteredPositions;
+                transferViscosities = &filteredViscosities;
+            }
+        }
+        if (transferPositions->empty()) {
+            return;
+        }
         float radius = _viscositySolverAttributeRadius * _dx;
 
         AttributeTransferParameters<float> atparams;
-        atparams.positions = positions;
-        atparams.attributes = viscosities;
+        atparams.positions = transferPositions;
+        atparams.attributes = transferViscosities;
         atparams.attributeGrid = &_viscosity;
         atparams.validGrid = &viscosityValidGrid;
         atparams.particleRadius = radius;
@@ -6453,6 +6930,32 @@ void FluidSimulation::_applyViscosityToVelocityField(double dt) {
         AttributeToGridTransfer<float> attributeTransfer;
         attributeTransfer.transfer(atparams);
         GridUtils::extrapolateGrid(&_viscosity, &viscosityValidGrid, _CFLConditionNumber);
+    }
+
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        float liquidScale = std::max(0.0f, _adaptivePhaseFieldLiquidViscosityScale);
+        float gasScale = std::max(0.0f, _adaptivePhaseFieldGasViscosityScale);
+        float eps = 1e-6f;
+        if (std::abs(liquidScale - 1.0f) > eps || std::abs(gasScale - 1.0f) > eps) {
+            int viscI = _viscosity.width;
+            int viscJ = _viscosity.height;
+            int viscK = _viscosity.depth;
+            for (int k = 0; k < viscK; k++) {
+                int pk = std::max(0, std::min(k, _ksize - 1));
+                for (int j = 0; j < viscJ; j++) {
+                    int pj = std::max(0, std::min(j, _jsize - 1));
+                    for (int i = 0; i < viscI; i++) {
+                        int pi = std::max(0, std::min(i, _isize - 1));
+                        float phase = _phaseFieldGrid(pi, pj, pk);
+                        phase = _clamp(phase, 0.0f, 1.0f);
+                        float baseViscosity = _viscosity(i, j, k);
+                        float scaledViscosity = baseViscosity *
+                            (phase * liquidScale + (1.0f - phase) * gasScale);
+                        _viscosity.set(i, j, k, scaledViscosity);
+                    }
+                }
+            }
+        }
     }
 
     if (_viscosity.isZero()) {
@@ -6489,7 +6992,7 @@ void FluidSimulation::_applyViscosityToVelocityField(double dt) {
         // Otherwise, it should capture the substep with max iterations
         int numIterations = _viscositySolver.getIterations();
         float error = _viscositySolver.getError();
-        if (_viscositySolverSuccess && (!success || (numIterations > _pressureSolverIterations))) {
+        if (_viscositySolverSuccess && (!success || (numIterations > _viscositySolverIterations))) {
             _viscositySolverSuccess = success;
             _viscositySolverIterations = numIterations;
             _viscositySolverError = error;
@@ -7234,13 +7737,34 @@ void FluidSimulation::_updatePICFLIPMarkerParticleVelocitiesThread(int startidx,
     std::vector<vmath::vec3> *positions, *velocities;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("VELOCITY", velocities);
+    std::vector<int> *phases = nullptr;
+    bool usePhaseSpecificRatios = false;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            _markerParticles.getAttributeValues("PHASE", phases);
+            usePhaseSpecificRatios = true;
+        }
+    }
 
     for (int i = startidx; i < endidx; i++) {
         vmath::vec3 pos = positions->at(i);
         vmath::vec3 vel = velocities->at(i);
         vmath::vec3 vPIC = _MACVelocity.evaluateVelocityAtPositionLinear(pos);
         vmath::vec3 vFLIP = vel + vPIC - _savedVelocityField.evaluateVelocityAtPositionLinear(pos);
-        vmath::vec3 v = (float)_ratioPICFLIP * vPIC + (float)(1 - _ratioPICFLIP) * vFLIP;
+        double picflipRatio = _ratioPICFLIP;
+        if (usePhaseSpecificRatios) {
+            int phase = phases->at(i);
+            if (phase == (int)MarkerParticlePhase::air) {
+                picflipRatio = _adaptivePhaseFieldGasPICFLIPRatio;
+                if (_isAdaptivePhaseFieldVariableDensityPressureProjectionEnabled) {
+                    picflipRatio = std::max(picflipRatio, 0.75);
+                }
+            } else {
+                picflipRatio = _adaptivePhaseFieldLiquidPICFLIPRatio;
+            }
+        }
+        vmath::vec3 v = (float)picflipRatio * vPIC + (float)(1 - picflipRatio) * vFLIP;
         velocities->at(i) = v;
     }
 }
@@ -7258,6 +7782,15 @@ void FluidSimulation::_updatePICAPICMarkerParticleVelocitiesThread(int startidx,
     _markerParticles.getAttributeValues("AFFINEX", affineValuesX);
     _markerParticles.getAttributeValues("AFFINEY", affineValuesY);
     _markerParticles.getAttributeValues("AFFINEZ", affineValuesZ);
+    std::vector<int> *phases = nullptr;
+    bool usePhaseSpecificRatios = false;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            _markerParticles.getAttributeValues("PHASE", phases);
+            usePhaseSpecificRatios = true;
+        }
+    }
 
     int U = 0; int V = 1; int W = 2; 
 
@@ -7297,10 +7830,23 @@ void FluidSimulation::_updatePICAPICMarkerParticleVelocitiesThread(int startidx,
             affineZ += weights[gidx] * _MACVelocity.W(g);
         }
 
+        double picapicRatio = _ratioPICAPIC;
+        if (usePhaseSpecificRatios) {
+            int phase = phases->at(i);
+            if (phase == (int)MarkerParticlePhase::air) {
+                picapicRatio = _adaptivePhaseFieldGasPICAPICRatio;
+                if (_isAdaptivePhaseFieldVariableDensityPressureProjectionEnabled) {
+                    picapicRatio = std::max(picapicRatio, 0.75);
+                }
+            } else {
+                picapicRatio = _adaptivePhaseFieldLiquidPICAPICRatio;
+            }
+        }
+        float apicBlend = (float)(1.0 - picapicRatio);
         velocities->at(i) = _MACVelocity.evaluateVelocityAtPositionLinear(pos);
-        affineValuesX->at(i) = affineX;
-        affineValuesY->at(i) = affineY;
-        affineValuesZ->at(i) = affineZ;
+        affineValuesX->at(i) = apicBlend * affineX;
+        affineValuesY->at(i) = apicBlend * affineY;
+        affineValuesZ->at(i) = apicBlend * affineZ;
     }
 }
 
@@ -7348,12 +7894,24 @@ void FluidSimulation::_constrainMarkerParticleVelocities(MeshFluidSource *inflow
         std::vector<vmath::vec3> *positions, *velocities;
         _markerParticles.getAttributeValues("POSITION", positions);
         _markerParticles.getAttributeValues("VELOCITY", velocities);
+        std::vector<int> *phases = nullptr;
+        bool constrainLiquidOnly = false;
+        if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+            ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+            if (phaseAttribute.type == AttributeDataType::INT) {
+                _markerParticles.getAttributeValues("PHASE", phases);
+                constrainLiquidOnly = true;
+            }
+        }
 
         MeshLevelSet *inflowSDF = inflow->getMeshLevelSet();
         vmath::vec3 v = inflow->getVelocity();
         RigidBodyVelocity rv = inflow->getRigidBodyVelocity(_currentFrameDeltaTime);
         VelocityFieldData *vdata = inflow->getVelocityFieldData();
         for (size_t i = 0; i < positions->size(); i++) {
+            if (constrainLiquidOnly && phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                continue;
+            }
             vmath::vec3 p = positions->at(i);
             GridIndex g = Grid3d::positionToGridIndex(p, _dx);
             if (!isInflowCell(g)) {
@@ -7423,6 +7981,9 @@ void FluidSimulation::_updateMarkerParticleVelocityAttributeGrid() {
     params.vfield = &_velocityAttributeGrid;
     params.validVelocities = &_velocityAttributeValidGrid;
     params.particleRadius = _liquidSDFParticleRadius;
+    params.useParticleMass = _isAdaptivePhaseFieldTwoPhaseParticlesEnabled;
+    params.filterParticlesByPhase = _isAdaptivePhaseFieldTwoPhaseParticlesEnabled;
+    params.particlePhase = (int)MarkerParticlePhase::liquid;
 
     if (_velocityTransferMethod == VelocityTransferMethod::FLIP) {
         params.velocityTransferMethod = VelocityAdvectorTransferMethod::FLIP;
@@ -7459,11 +8020,36 @@ void FluidSimulation::_updateMarkerParticleAgeAttributeGrid(Array3d<float> &ageA
     std::vector<float> *ages;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("AGE", ages);
+    std::vector<vmath::vec3> filteredPositions;
+    std::vector<float> filteredAges;
+    std::vector<vmath::vec3> *transferPositions = positions;
+    std::vector<float> *transferAges = ages;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            std::vector<int> *phases;
+            _markerParticles.getAttributeValues("PHASE", phases);
+            filteredPositions.reserve(positions->size());
+            filteredAges.reserve(ages->size());
+            for (size_t i = 0; i < positions->size(); i++) {
+                if (phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                filteredPositions.push_back(positions->at(i));
+                filteredAges.push_back(ages->at(i));
+            }
+            transferPositions = &filteredPositions;
+            transferAges = &filteredAges;
+        }
+    }
+    if (transferPositions->empty()) {
+        return;
+    }
     float radius = _ageAttributeRadius * _dx;
 
     AttributeTransferParameters<float> params;
-    params.positions = positions;
-    params.attributes = ages;
+    params.positions = transferPositions;
+    params.attributes = transferAges;
     params.attributeGrid = &ageAttributeGrid;
     params.validGrid = &ageAttributeValidGrid;
     params.particleRadius = radius;
@@ -7484,11 +8070,36 @@ void FluidSimulation::_updateMarkerParticleLifetimeAttributeGrid(Array3d<float> 
     std::vector<float> *lifetimes;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("LIFETIME", lifetimes);
+    std::vector<vmath::vec3> filteredPositions;
+    std::vector<float> filteredLifetimes;
+    std::vector<vmath::vec3> *transferPositions = positions;
+    std::vector<float> *transferLifetimes = lifetimes;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            std::vector<int> *phases;
+            _markerParticles.getAttributeValues("PHASE", phases);
+            filteredPositions.reserve(positions->size());
+            filteredLifetimes.reserve(lifetimes->size());
+            for (size_t i = 0; i < positions->size(); i++) {
+                if (phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                filteredPositions.push_back(positions->at(i));
+                filteredLifetimes.push_back(lifetimes->at(i));
+            }
+            transferPositions = &filteredPositions;
+            transferLifetimes = &filteredLifetimes;
+        }
+    }
+    if (transferPositions->empty()) {
+        return;
+    }
     float radius = _lifetimeAttributeRadius * _dx;
 
     AttributeTransferParameters<float> params;
-    params.positions = positions;
-    params.attributes = lifetimes;
+    params.positions = transferPositions;
+    params.attributes = transferLifetimes;
     params.attributeGrid = &lifetimeAttributeGrid;
     params.validGrid = &lifetimeAttributeValidGrid;
     params.particleRadius = radius;
@@ -7556,11 +8167,36 @@ void FluidSimulation::_updateMarkerParticleViscosityAttributeGrid(Array3d<float>
     std::vector<float> *viscosities;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("VISCOSITY", viscosities);
+    std::vector<vmath::vec3> filteredPositions;
+    std::vector<float> filteredViscosities;
+    std::vector<vmath::vec3> *transferPositions = positions;
+    std::vector<float> *transferViscosities = viscosities;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            std::vector<int> *phases;
+            _markerParticles.getAttributeValues("PHASE", phases);
+            filteredPositions.reserve(positions->size());
+            filteredViscosities.reserve(viscosities->size());
+            for (size_t i = 0; i < positions->size(); i++) {
+                if (phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                filteredPositions.push_back(positions->at(i));
+                filteredViscosities.push_back(viscosities->at(i));
+            }
+            transferPositions = &filteredPositions;
+            transferViscosities = &filteredViscosities;
+        }
+    }
+    if (transferPositions->empty()) {
+        return;
+    }
     float radius = _viscosityAttributeRadius * _dx;
 
     AttributeTransferParameters<float> params;
-    params.positions = positions;
-    params.attributes = viscosities;
+    params.positions = transferPositions;
+    params.attributes = transferViscosities;
     params.attributeGrid = &viscosityAttributeGrid;
     params.validGrid = &viscosityAttributeValidGrid;
     params.particleRadius = radius;
@@ -7587,11 +8223,36 @@ void FluidSimulation::_updateMarkerParticleColorAttributeGrid(Array3d<float> &co
     std::vector<vmath::vec3> *colors;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("COLOR", colors);
+    std::vector<vmath::vec3> filteredPositions;
+    std::vector<vmath::vec3> filteredColors;
+    std::vector<vmath::vec3> *transferPositions = positions;
+    std::vector<vmath::vec3> *transferColors = colors;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            std::vector<int> *phases;
+            _markerParticles.getAttributeValues("PHASE", phases);
+            filteredPositions.reserve(positions->size());
+            filteredColors.reserve(colors->size());
+            for (size_t i = 0; i < positions->size(); i++) {
+                if (phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                filteredPositions.push_back(positions->at(i));
+                filteredColors.push_back(colors->at(i));
+            }
+            transferPositions = &filteredPositions;
+            transferColors = &filteredColors;
+        }
+    }
+    if (transferPositions->empty()) {
+        return;
+    }
     float radius = _colorAttributeRadius * _dx;
 
     AttributeTransferParameters<vmath::vec3> params;
-    params.positions = positions;
-    params.attributes = colors;
+    params.positions = transferPositions;
+    params.attributes = transferColors;
     params.attributeGrid = &colorAttributeGrid;
     params.validGrid = &colorAttributeValidGrid;
     params.particleRadius = radius;
@@ -7633,6 +8294,13 @@ void FluidSimulation::_updateMarkerParticleColorAttributeMixing(double dt) {
     std::vector<vmath::vec3> *colors;
     _markerParticles.getAttributeValues("POSITION", positions);
     _markerParticles.getAttributeValues("COLOR", colors);
+    std::vector<int> *phases = nullptr;
+    if (_isAdaptivePhaseFieldTwoPhaseParticlesEnabled) {
+        ParticleSystemAttribute phaseAttribute = _markerParticles.getAttribute("PHASE");
+        if (phaseAttribute.type == AttributeDataType::INT) {
+            _markerParticles.getAttributeValues("PHASE", phases);
+        }
+    }
 
     SpatialPointGrid pointGrid(_isize, _jsize, _ksize, _dx);
     pointGrid.insert(*(positions));
@@ -7647,6 +8315,7 @@ void FluidSimulation::_updateMarkerParticleColorAttributeMixing(double dt) {
     for (int i = 0; i < numthreads; i++) {
         threads[i] = std::thread(&FluidSimulation::_updateMarkerParticleColorAttributeMixingThread, this,
                                  intervals[i], intervals[i + 1], dt, &pointGrid,
+                                 phases,
                                  colors, &colorsNew, &colorsNewValid);
     }
 
@@ -7768,6 +8437,7 @@ vmath::vec3 FluidSimulation::_HSVToRGB(vmath::vec3 in) {
 
 void FluidSimulation::_updateMarkerParticleColorAttributeMixingThread(int startidx, int endidx, double dt,
                                                                       SpatialPointGrid *pointGrid,
+                                                                      std::vector<int> *phases,
                                                                       std::vector<vmath::vec3> *colors,
                                                                       std::vector<vmath::vec3> *colorsNew,
                                                                       std::vector<bool> *colorsNewValid) {
@@ -7778,6 +8448,9 @@ void FluidSimulation::_updateMarkerParticleColorAttributeMixingThread(int starti
     if (_isMixboxEnabled) {
         // Mixbox Blending
         for (int i = startidx; i < endidx; i++) {
+            if (phases != nullptr && phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                continue;
+            }
             GridPointReference ref(i);
         
             refs.clear();
@@ -7788,17 +8461,35 @@ void FluidSimulation::_updateMarkerParticleColorAttributeMixingThread(int starti
             }
 
             vmath::vec3 colorOld = colors->at(i);
-            vmath::vec3 c0 = colors->at(refs[0].id);
+            int c0idx = -1;
+            for (size_t ridx = 0; ridx < refs.size(); ridx++) {
+                int refid = refs[ridx].id;
+                if (phases != nullptr && phases->at(refid) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                c0idx = refid;
+                break;
+            }
+            if (c0idx < 0) {
+                continue;
+            }
+            vmath::vec3 c0 = colors->at(c0idx);
             float r = c0.x;
             float g = c0.y;
             float b = c0.z;
+            size_t validCount = 1;
             for (size_t ridx = 1; ridx < refs.size(); ridx++) {
-                vmath::vec3 ci = colors->at(refs[ridx].id);
-                float t = 1.0f / ((float)(ridx + 1));
+                int refid = refs[ridx].id;
+                if (phases != nullptr && phases->at(refid) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                vmath::vec3 ci = colors->at(refid);
+                float t = 1.0f / ((float)(validCount + 1));
                 mixbox_lerp_srgb32f(r, g, b, ci.x, ci.y, ci.z, t, &r,&g,&b);
+                validCount++;
             }
 
-            if (refs.size() > 0) {
+            if (validCount > 0) {
                 mixbox_lerp_srgb32f(colorOld.x, colorOld.y, colorOld.z, r, g, b, mixRate, &r,&g,&b);
                 vmath::vec3 colorNew(r, g, b);
                 colorsNew->at(i) = colorNew;
@@ -7809,18 +8500,27 @@ void FluidSimulation::_updateMarkerParticleColorAttributeMixingThread(int starti
     } else {
         // RGB Additive Blending
         for (int i = startidx; i < endidx; i++) {
+            if (phases != nullptr && phases->at(i) != (int)MarkerParticlePhase::liquid) {
+                continue;
+            }
             GridPointReference ref(i);
             
             refs.clear();
             pointGrid->queryPointReferencesInsideSphere(ref, searchRadius, refs);
 
             vmath::vec3 colorNew;
+            int validCount = 0;
             for (size_t ridx = 0; ridx < refs.size(); ridx++) {
-                colorNew += colors->at(refs[ridx].id);
+                int refid = refs[ridx].id;
+                if (phases != nullptr && phases->at(refid) != (int)MarkerParticlePhase::liquid) {
+                    continue;
+                }
+                colorNew += colors->at(refid);
+                validCount++;
             }
 
-            if (refs.size() > 0) {
-                colorNew /= refs.size();
+            if (validCount > 0) {
+                colorNew /= validCount;
                 vmath::vec3 colorOld = colors->at(i);
                 colorsNew->at(i) = (1.0f - mixRate) * colorOld + mixRate * colorNew;
                 colorsNewValid->at(i) = true;
@@ -8267,15 +8967,37 @@ void FluidSimulation::_removeMarkerParticles(double dt) {
     _currentExtremeVelocityParticlesRemoved = numExtremeVelocityParticlesRemoved;
 }
 
-int FluidSimulation::_getAdaptivePhaseFieldTargetParticleLevel(float signedDistance) const {
+int FluidSimulation::_getAdaptivePhaseFieldTargetParticleLevel(float signedDistance,
+                                                               int currentLevel) const {
     if (_adaptivePhaseFieldParticleMaxLevel <= 0) {
         return 0;
     }
 
     float distanceCells = std::abs(signedDistance) / (float)_dx;
     float bandwidth = std::max(_adaptivePhaseFieldParticleLevelBandwidth, 1e-6f);
-    int level = (int)std::floor(distanceCells / bandwidth);
-    return std::max(0, std::min(_adaptivePhaseFieldParticleMaxLevel, level));
+    int rawLevel = (int)std::floor(distanceCells / bandwidth);
+    rawLevel = std::max(0, std::min(_adaptivePhaseFieldParticleMaxLevel, rawLevel));
+
+    if (currentLevel < 0) {
+        return rawLevel;
+    }
+
+    int clampedCurrent = std::max(0, std::min(_adaptivePhaseFieldParticleMaxLevel, currentLevel));
+    if (rawLevel > clampedCurrent) {
+        float upBoundary = (float)(clampedCurrent + 1) * bandwidth;
+        float hysteresis = 0.35f * bandwidth;
+        if (distanceCells < upBoundary + hysteresis) {
+            return clampedCurrent;
+        }
+    } else if (rawLevel < clampedCurrent) {
+        float downBoundary = (float)clampedCurrent * bandwidth;
+        float hysteresis = 0.35f * bandwidth;
+        if (distanceCells > downBoundary - hysteresis) {
+            return clampedCurrent;
+        }
+    }
+
+    return rawLevel;
 }
 
 vmath::vec3 FluidSimulation::_getAdaptivePhaseFieldSplitOffset(int childIndex,
@@ -8301,6 +9023,10 @@ void FluidSimulation::_rebuildAdaptivePhaseFieldPhaseGridFromTwoPhaseParticles(d
         return;
     }
 
+    // Preserve the precomputed APF phase field as a smooth baseline and
+    // only inject two-phase particle information where confidence is high.
+    Array3d<float> basePhaseGrid = _phaseFieldGrid;
+
     std::vector<vmath::vec3> *positions;
     std::vector<int> *phases;
     std::vector<float> *masses;
@@ -8314,62 +9040,142 @@ void FluidSimulation::_rebuildAdaptivePhaseFieldPhaseGridFromTwoPhaseParticles(d
     float supportRadius = std::max((float)particleRadius, (float)_dx);
     float supportRadiusSq = supportRadius * supportRadius;
     int radiusInCells = std::max(1, (int)std::ceil(supportRadius / (float)_dx));
+    size_t numCells = (size_t)_isize * (size_t)_jsize * (size_t)_ksize;
+    const size_t maxTemporaryBytes = 256ull * 1024ull * 1024ull;
+    size_t bytesPerThread = numCells * sizeof(float) * 2ull;
+    int numCPU = ThreadUtils::getMaxThreadCount();
+    int maxThreadsByMemory = 1;
+    if (bytesPerThread > 0) {
+        maxThreadsByMemory = std::max(1, (int)(maxTemporaryBytes / bytesPerThread));
+    }
+    int numthreads = std::max(1, std::min({numCPU, (int)positions->size(), maxThreadsByMemory}));
 
-    for (size_t pidx = 0; pidx < positions->size(); pidx++) {
-        vmath::vec3 p = positions->at(pidx);
-        GridIndex gc = Grid3d::positionToGridIndex(p, _dx);
-        if (!Grid3d::isGridIndexInRange(gc, _isize, _jsize, _ksize)) {
-            continue;
-        }
-
-        int phaseType = phases->at(pidx);
-        float mass = masses->at(pidx);
-        if (mass <= 0.0f) {
-            mass = phaseType == (int)MarkerParticlePhase::liquid ?
-                _adaptivePhaseFieldLiquidDensity : _adaptivePhaseFieldGasDensity;
-        }
-
-        int i0 = std::max(0, gc.i - radiusInCells);
-        int j0 = std::max(0, gc.j - radiusInCells);
-        int k0 = std::max(0, gc.k - radiusInCells);
-        int i1 = std::min(_isize - 1, gc.i + radiusInCells);
-        int j1 = std::min(_jsize - 1, gc.j + radiusInCells);
-        int k1 = std::min(_ksize - 1, gc.k + radiusInCells);
-
-        for (int k = k0; k <= k1; k++) {
-            for (int j = j0; j <= j1; j++) {
-                for (int i = i0; i <= i1; i++) {
-                    vmath::vec3 c = Grid3d::GridIndexToCellCenter(i, j, k, _dx);
-                    float d2 = vmath::dot(c - p, c - p);
-                    if (d2 > supportRadiusSq) {
+    if (numthreads > 1) {
+        std::vector<std::vector<float> > liquidMassThread(numthreads, std::vector<float>(numCells, 0.0f));
+        std::vector<std::vector<float> > totalMassThread(numthreads, std::vector<float>(numCells, 0.0f));
+        std::vector<std::thread> threads(numthreads);
+        std::vector<int> intervals = ThreadUtils::splitRangeIntoIntervals(0, (int)positions->size(), numthreads);
+        for (int tidx = 0; tidx < numthreads; tidx++) {
+            threads[tidx] = std::thread([&, tidx]() {
+                std::vector<float> &threadLiquid = liquidMassThread[tidx];
+                std::vector<float> &threadTotal = totalMassThread[tidx];
+                for (int pidx = intervals[tidx]; pidx < intervals[tidx + 1]; pidx++) {
+                    vmath::vec3 p = positions->at(pidx);
+                    GridIndex gc = Grid3d::positionToGridIndex(p, _dx);
+                    if (!Grid3d::isGridIndexInRange(gc, _isize, _jsize, _ksize)) {
                         continue;
                     }
 
-                    float t = std::max(0.0f, 1.0f - d2 / supportRadiusSq);
-                    float weight = t * t * t;
-                    float weightedMass = weight * mass;
-                    totalMass.add(i, j, k, weightedMass);
-                    if (phaseType == (int)MarkerParticlePhase::liquid) {
-                        liquidMass.add(i, j, k, weightedMass);
+                    int phaseType = phases->at(pidx);
+                    float mass = masses->at(pidx);
+                    if (mass <= 0.0f) {
+                        mass = phaseType == (int)MarkerParticlePhase::liquid ?
+                            _adaptivePhaseFieldLiquidDensity : _adaptivePhaseFieldGasDensity;
+                    }
+
+                    int i0 = std::max(0, gc.i - radiusInCells);
+                    int j0 = std::max(0, gc.j - radiusInCells);
+                    int k0 = std::max(0, gc.k - radiusInCells);
+                    int i1 = std::min(_isize - 1, gc.i + radiusInCells);
+                    int j1 = std::min(_jsize - 1, gc.j + radiusInCells);
+                    int k1 = std::min(_ksize - 1, gc.k + radiusInCells);
+
+                    for (int k = k0; k <= k1; k++) {
+                        for (int j = j0; j <= j1; j++) {
+                            for (int i = i0; i <= i1; i++) {
+                                vmath::vec3 c = Grid3d::GridIndexToCellCenter(i, j, k, _dx);
+                                float d2 = vmath::dot(c - p, c - p);
+                                if (d2 > supportRadiusSq) {
+                                    continue;
+                                }
+
+                                float t = std::max(0.0f, 1.0f - d2 / supportRadiusSq);
+                                float weight = t * t * t;
+                                float weightedMass = weight * mass;
+                                int flatidx = Grid3d::getFlatIndex(i, j, k, _isize, _jsize);
+                                threadTotal[flatidx] += weightedMass;
+                                if (phaseType == (int)MarkerParticlePhase::liquid) {
+                                    threadLiquid[flatidx] += weightedMass;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        for (int tidx = 0; tidx < numthreads; tidx++) {
+            threads[tidx].join();
+        }
+
+        float *liquidRaw = liquidMass.getRawArray();
+        float *totalRaw = totalMass.getRawArray();
+        for (int tidx = 0; tidx < numthreads; tidx++) {
+            const std::vector<float> &threadLiquid = liquidMassThread[tidx];
+            const std::vector<float> &threadTotal = totalMassThread[tidx];
+            for (size_t idx = 0; idx < numCells; idx++) {
+                liquidRaw[idx] += threadLiquid[idx];
+                totalRaw[idx] += threadTotal[idx];
+            }
+        }
+    } else {
+        for (size_t pidx = 0; pidx < positions->size(); pidx++) {
+            vmath::vec3 p = positions->at(pidx);
+            GridIndex gc = Grid3d::positionToGridIndex(p, _dx);
+            if (!Grid3d::isGridIndexInRange(gc, _isize, _jsize, _ksize)) {
+                continue;
+            }
+
+            int phaseType = phases->at(pidx);
+            float mass = masses->at(pidx);
+            if (mass <= 0.0f) {
+                mass = phaseType == (int)MarkerParticlePhase::liquid ?
+                    _adaptivePhaseFieldLiquidDensity : _adaptivePhaseFieldGasDensity;
+            }
+
+            int i0 = std::max(0, gc.i - radiusInCells);
+            int j0 = std::max(0, gc.j - radiusInCells);
+            int k0 = std::max(0, gc.k - radiusInCells);
+            int i1 = std::min(_isize - 1, gc.i + radiusInCells);
+            int j1 = std::min(_jsize - 1, gc.j + radiusInCells);
+            int k1 = std::min(_ksize - 1, gc.k + radiusInCells);
+
+            for (int k = k0; k <= k1; k++) {
+                for (int j = j0; j <= j1; j++) {
+                    for (int i = i0; i <= i1; i++) {
+                        vmath::vec3 c = Grid3d::GridIndexToCellCenter(i, j, k, _dx);
+                        float d2 = vmath::dot(c - p, c - p);
+                        if (d2 > supportRadiusSq) {
+                            continue;
+                        }
+
+                        float t = std::max(0.0f, 1.0f - d2 / supportRadiusSq);
+                        float weight = t * t * t;
+                        float weightedMass = weight * mass;
+                        totalMass.add(i, j, k, weightedMass);
+                        if (phaseType == (int)MarkerParticlePhase::liquid) {
+                            liquidMass.add(i, j, k, weightedMass);
+                        }
                     }
                 }
             }
         }
     }
 
-    float interfaceHalfWidth = std::max((float)particleRadius, (float)_dx);
     float eps = 1e-6f;
+    float blendMassScale = std::max(1.0f, 0.5f * (_adaptivePhaseFieldLiquidDensity + _adaptivePhaseFieldGasDensity));
     for (int k = 0; k < _ksize; k++) {
         for (int j = 0; j < _jsize; j++) {
             for (int i = 0; i < _isize; i++) {
-                float phase = 0.0f;
+                float phaseBase = std::max(0.0f, std::min(1.0f, basePhaseGrid(i, j, k)));
+                float phaseParticle = phaseBase;
                 float tmass = totalMass(i, j, k);
                 if (tmass > eps) {
-                    phase = liquidMass(i, j, k) / tmass;
-                } else {
-                    float sdf = _liquidSDF.get(i, j, k);
-                    phase = 0.5f - 0.5f * sdf / interfaceHalfWidth;
+                    phaseParticle = liquidMass(i, j, k) / tmass;
                 }
+                float confidence = tmass / (tmass + blendMassScale);
+                confidence = std::max(0.0f, std::min(1.0f, confidence));
+                float phase = (1.0f - confidence) * phaseBase + confidence * phaseParticle;
                 phase = std::max(0.0f, std::min(1.0f, phase));
                 _phaseFieldGrid.set(i, j, k, phase);
             }
@@ -8423,6 +9229,7 @@ void FluidSimulation::_updateAdaptivePhaseFieldAirParticles() {
     Array3d<int> liquidCount(_isize, _jsize, _ksize, 0);
     Array3d<int> airCount(_isize, _jsize, _ksize, 0);
     AABB domainBounds = _getBoundaryAABB();
+    vmath::vec3 phaseGridOffset(0.5f * (float)_dx, 0.5f * (float)_dx, 0.5f * (float)_dx);
 
     for (size_t i = 0; i < positions->size(); i++) {
         vmath::vec3 p = positions->at(i);
@@ -8438,8 +9245,11 @@ void FluidSimulation::_updateAdaptivePhaseFieldAirParticles() {
 
         int phase = phases->at(i);
         if (phase == (int)MarkerParticlePhase::air) {
+            float phaseValue = Interpolation::trilinearInterpolate(p - phaseGridOffset, _dx, _phaseFieldGrid);
+            phaseValue = _clamp(phaseValue, 0.0f, 1.0f);
             if (_solidSDF.trilinearInterpolate(p) <= 0.0f ||
-                    _liquidSDF.trilinearInterpolate(p) < -0.25f * (float)_dx) {
+                    _liquidSDF.trilinearInterpolate(p) < -0.10f * (float)_dx ||
+                    phaseValue > 0.60f) {
                 isRemoved[i] = true;
                 continue;
             }
@@ -8506,7 +9316,18 @@ void FluidSimulation::_updateAdaptivePhaseFieldAirParticles() {
                     continue;
                 }
 
-                int needed = maxAirPerCell - airCount(g);
+                float phase = _clamp(_phaseFieldGrid(i, j, k), 0.0f, 1.0f);
+                if (phase > 0.35f) {
+                    continue;
+                }
+
+                int targetAirPerCell = (int)std::floor((1.0f - phase) * (float)maxAirPerCell + 1e-4f);
+                targetAirPerCell = std::max(0, std::min(maxAirPerCell, targetAirPerCell));
+                if (targetAirPerCell <= 0) {
+                    continue;
+                }
+
+                int needed = targetAirPerCell - airCount(g);
                 if (needed <= 0) {
                     continue;
                 }
@@ -8674,7 +9495,8 @@ void FluidSimulation::_updateAdaptivePhaseFieldParticleAdaptivity() {
         }
 
         int currentLevel = std::max(0, levels->at(i));
-        int targetLevel = _getAdaptivePhaseFieldTargetParticleLevel(_liquidSDF.trilinearInterpolate(p));
+        int targetLevel = _getAdaptivePhaseFieldTargetParticleLevel(_liquidSDF.trilinearInterpolate(p),
+                                                                     currentLevel);
         if (targetLevel > currentLevel) {
             int counter = coarsenCounters->at(i) + 1;
             coarsenCounters->at(i) = counter;
@@ -8705,13 +9527,11 @@ void FluidSimulation::_updateAdaptivePhaseFieldParticleAdaptivity() {
 
         int newLevel = currentLevel - 1;
         float parentMass = std::max(masses->at(i), 0.0f);
-        float childMass = parentMass / 8.0f;
-        masses->at(i) = childMass;
         float levelScale = std::pow(2.0f, (float)std::max(newLevel, 0));
         float baseOffset = 0.125f * (float)_dx * levelScale;
         float jitterAmount = _adaptivePhaseFieldParticleSplitJitter * (float)_dx;
-
-        int numChildrenAdded = 0;
+        std::vector<vmath::vec3> splitChildPositions;
+        splitChildPositions.reserve(7);
         for (int childIndex = 1; childIndex < 8; childIndex++) {
             vmath::vec3 newPosition = p + _getAdaptivePhaseFieldSplitOffset(childIndex, baseOffset, jitterAmount);
             GridIndex gc = Grid3d::positionToGridIndex(newPosition, _dx);
@@ -8725,7 +9545,21 @@ void FluidSimulation::_updateAdaptivePhaseFieldParticleAdaptivity() {
                 continue;
             }
 
-            addedPositions.push_back(newPosition);
+            splitChildPositions.push_back(newPosition);
+            countGrid.add(gc, 1);
+        }
+
+        int childCount = (int)splitChildPositions.size();
+        if (childCount <= 0) {
+            continue;
+        }
+
+        float childMass = parentMass / (float)(childCount + 1);
+        masses->at(i) = childMass;
+        levels->at(i) = newLevel;
+
+        for (int cidx = 0; cidx < childCount; cidx++) {
+            addedPositions.push_back(splitChildPositions[cidx]);
             addedVelocities.push_back(velocities->at(i));
             addedPhases.push_back((int)MarkerParticlePhase::liquid);
             addedMasses.push_back(childMass);
@@ -8763,13 +9597,6 @@ void FluidSimulation::_updateAdaptivePhaseFieldParticleAdaptivity() {
             } else if (isUIDAttributeEnabled) {
                 addedUIDs.push_back((int)UIDAttribute::unset);
             }
-
-            countGrid.add(gc, 1);
-            numChildrenAdded++;
-        }
-
-        if (numChildrenAdded > 0) {
-            levels->at(i) = newLevel;
         }
     }
 
@@ -9560,6 +10387,83 @@ void FluidSimulation::_smoothSurfaceMesh(TriangleMesh &mesh) {
     }
 }
 
+void FluidSimulation::_stabilizeSurfaceMeshTemporal(
+        TriangleMesh &mesh,
+        std::vector<vmath::vec3> &previousVertices) {
+    if (mesh.vertices.empty()) {
+        previousVertices.clear();
+        return;
+    }
+
+    if (!_isSurfaceTemporalSmoothingEnabled ||
+            _surfaceTemporalSmoothingStrength <= 0.0 ||
+            previousVertices.empty()) {
+        previousVertices = mesh.vertices;
+        return;
+    }
+
+    double searchRadius = _surfaceTemporalSmoothingRadius * _dx;
+    if (searchRadius <= 0.0) {
+        previousVertices = mesh.vertices;
+        return;
+    }
+
+    AABB previousBounds(previousVertices);
+    previousBounds.expand(searchRadius);
+
+    int gisize = std::max((int)std::ceil(previousBounds.width / searchRadius), 1);
+    int gjsize = std::max((int)std::ceil(previousBounds.height / searchRadius), 1);
+    int gksize = std::max((int)std::ceil(previousBounds.depth / searchRadius), 1);
+
+    std::vector<vmath::vec3> shiftedPreviousVertices(previousVertices.size());
+    for (size_t i = 0; i < previousVertices.size(); i++) {
+        shiftedPreviousVertices[i] = previousVertices[i] - previousBounds.position;
+    }
+
+    SpatialPointGrid previousGrid(gisize, gjsize, gksize, searchRadius);
+    previousGrid.insert(shiftedPreviousVertices);
+
+    const float blend = (float)_surfaceTemporalSmoothingStrength;
+    const double searchRadiusSq = searchRadius * searchRadius;
+    std::vector<GridPointReference> neighbors;
+    neighbors.reserve(16);
+    for (size_t vidx = 0; vidx < mesh.vertices.size(); vidx++) {
+        vmath::vec3 v = mesh.vertices[vidx];
+        if (!previousBounds.isPointInside(v)) {
+            continue;
+        }
+
+        neighbors.clear();
+        vmath::vec3 queryPoint = v - previousBounds.position;
+        previousGrid.queryPointReferencesInsideSphere(queryPoint, searchRadius, neighbors);
+        if (neighbors.empty()) {
+            continue;
+        }
+
+        bool hasClosestPoint = false;
+        double minDistanceSq = searchRadiusSq + 1.0;
+        vmath::vec3 closestPoint;
+        for (size_t nidx = 0; nidx < neighbors.size(); nidx++) {
+            vmath::vec3 candidate = previousGrid.getPointFromReference(neighbors[nidx]);
+            double candidateDistanceSq = vmath::lengthsq(candidate - queryPoint);
+            if (candidateDistanceSq < minDistanceSq) {
+                minDistanceSq = candidateDistanceSq;
+                closestPoint = candidate;
+                hasClosestPoint = true;
+            }
+        }
+
+        if (!hasClosestPoint || minDistanceSq > searchRadiusSq) {
+            continue;
+        }
+
+        closestPoint += previousBounds.position;
+        mesh.vertices[vidx] = v + blend * (closestPoint - v);
+    }
+
+    previousVertices = mesh.vertices;
+}
+
 void FluidSimulation::_invertContactNormals(TriangleMesh &mesh) {
     if (!_isInvertedContactNormalsEnabled) {
         return;
@@ -9716,6 +10620,7 @@ void FluidSimulation::_computeDomainBoundarySDF(MeshLevelSet *sdf) {
 
 void FluidSimulation::_generateOutputSurface(TriangleMesh &surface, TriangleMesh &preview,
                                                std::vector<vmath::vec3> *particles,
+                                               std::vector<float> *particleRadiusScales,
                                                MeshLevelSet *solidSDF) {
     
     _applyMeshingVolumeToSDF(solidSDF);
@@ -9762,7 +10667,13 @@ void FluidSimulation::_generateOutputSurface(TriangleMesh &surface, TriangleMesh
     params.computechunks = _numSurfaceReconstructionPolygonizerSlices;
     params.radius = _markerParticleRadius*_markerParticleScale;
     params.particles = particles;
+    params.particleRadiusScales = particleRadiusScales;
     params.solidSDF = solidSDF;
+    params.isThinSheetAnisotropyEnabled = _isSurfaceThinSheetAnisotropyEnabled;
+    params.thinSheetAnisotropyStrength = _surfaceThinSheetAnisotropyStrength;
+    params.thinSheetAnisotropyBandWidth = _surfaceThinSheetAnisotropyBandWidth;
+    params.surfaceSDF = &_fluidSurfaceLevelSet;
+    params.surfaceSDFDx = _dx;
     params.isPreviewMesherEnabled = _isPreviewSurfaceMeshEnabled;
     if (_isPreviewSurfaceMeshEnabled) {
         params.previewdx = _previewdx;
@@ -10184,6 +11095,7 @@ void FluidSimulation::_generateSurfaceViscosityAttributeData(TriangleMesh &surfa
 }
 
 void FluidSimulation::_outputSurfaceMeshThread(std::vector<vmath::vec3> *particles,
+                                               std::vector<float> *particleRadiusScales,
                                                MeshLevelSet *solidSDF, 
                                                MACVelocityField *vfield,
                                                std::vector<int> *sourceID) {
@@ -10202,8 +11114,9 @@ void FluidSimulation::_outputSurfaceMeshThread(std::vector<vmath::vec3> *particl
     }
 
     TriangleMesh surfacemesh, previewmesh;
-    _generateOutputSurface(surfacemesh, previewmesh, particles, solidSDF);
+    _generateOutputSurface(surfacemesh, previewmesh, particles, particleRadiusScales, solidSDF);
     delete particles;
+    delete particleRadiusScales;
     delete solidSDF;
 
     _generateSurfaceMotionBlurData(surfacemesh, vfield);
@@ -10225,6 +11138,7 @@ void FluidSimulation::_outputSurfaceMeshThread(std::vector<vmath::vec3> *particl
     _generateSurfaceColorAttributeData(surfacemesh);
 
     _smoothSurfaceMesh(surfacemesh);
+    _stabilizeSurfaceMeshTemporal(surfacemesh, _surfaceTemporalSmoothingPreviousVertices);
     _invertContactNormals(surfacemesh);
 
     vmath::vec3 scale(_domainScale, _domainScale, _domainScale);
@@ -10239,6 +11153,7 @@ void FluidSimulation::_outputSurfaceMeshThread(std::vector<vmath::vec3> *particl
 
     if (_isPreviewSurfaceMeshEnabled) {
         _smoothSurfaceMesh(previewmesh);
+        _stabilizeSurfaceMeshTemporal(previewmesh, _previewSurfaceTemporalSmoothingPreviousVertices);
         previewmesh.scale(scale);
         previewmesh.translate(_domainOffset);
 
@@ -10247,6 +11162,8 @@ void FluidSimulation::_outputSurfaceMeshThread(std::vector<vmath::vec3> *particl
         _outputData.frameData.preview.vertices = (int)previewmesh.vertices.size();
         _outputData.frameData.preview.triangles = (int)previewmesh.triangles.size();
         _outputData.frameData.preview.bytes = (unsigned int)_outputData.surfacePreviewData.size();
+    } else {
+        _previewSurfaceTemporalSmoothingPreviousVertices.clear();
     }
 
     t.stop();
@@ -10273,9 +11190,18 @@ void FluidSimulation::_launchOutputSurfaceMeshThread() {
 
     // Particles will be deleted within the thread after use
     std::vector<vmath::vec3> *particles = new std::vector<vmath::vec3>();
+    std::vector<float> *particleRadiusScales = new std::vector<float>();
     particles->reserve(positions->size());
+    particleRadiusScales->reserve(positions->size());
     std::vector<int> liquidParticleIndices;
     liquidParticleIndices.reserve(positions->size());
+    std::vector<int> *levels = nullptr;
+    bool hasAdaptiveLevels = false;
+    ParticleSystemAttribute levelAttribute = _markerParticles.getAttribute("APF_LEVEL");
+    if (levelAttribute.type == AttributeDataType::INT) {
+        _markerParticles.getAttributeValues("APF_LEVEL", levels);
+        hasAdaptiveLevels = levels->size() == positions->size();
+    }
     for (size_t i = 0; i < positions->size(); i++) {
         bool includeParticle = true;
         if (filterLiquidOnly) {
@@ -10283,6 +11209,15 @@ void FluidSimulation::_launchOutputSurfaceMeshThread() {
         }
         if (includeParticle) {
             particles->push_back(positions->at(i));
+            float radiusScale = 1.0f;
+            if (hasAdaptiveLevels) {
+                int level = std::max(0, std::min(8, levels->at(i)));
+                // Use a softer meshing radius progression than dynamics level scale
+                // to reduce frame-to-frame droplet growth/shrink popping.
+                radiusScale = std::pow(2.0f, 0.5f * (float)level);
+                radiusScale = std::max(1.0f, std::min(radiusScale, 4.0f));
+            }
+            particleRadiusScales->push_back(radiusScale);
             liquidParticleIndices.push_back((int)i);
         }
     }
@@ -10316,7 +11251,7 @@ void FluidSimulation::_launchOutputSurfaceMeshThread() {
     }
 
     _mesherThread = std::thread(&FluidSimulation::_outputSurfaceMeshThread, this,
-                                particles, tempSolidSDF, vfield, sourceID);
+                                particles, particleRadiusScales, tempSolidSDF, vfield, sourceID);
 
     if (!_isAsynchronousMeshingEnabled && _mesherThread.joinable()) {
         _mesherThread.join();
